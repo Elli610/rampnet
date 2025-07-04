@@ -15,10 +15,10 @@
 - **Fiat integration** via Wise (global banking rails)
 - **Attestation & Proofs** powered by Flare Data Connector (FDC)
 - **Price feeds** via Flare Time Series Oracle (FTSO)
-- **Cross-chain execution** using fAssets, Flare EVM, and LayerZero OApp
+- **Cross-chain execution** using fAssets, [Flare EVM](https://flare.network/), and [LayerZero OApp v2](https://docs.layerzero.network/v2/developers/evm/oapp/overview)
 - **Smart contract-based distribution** of native assets on target chains
 - **Privy integration** for seamless Web3 onboarding with social logins across all supported chains
-- **Hardhat v3** is used as the primary framework for testing and network simulation
+- [**Hardhat v3**](https://hardhat.org/hardhat3-alpha) is used as the primary framework for testing and network simulation
 
 ## 🌐 Supported Chains
 
