@@ -156,3 +156,4 @@ export const mockExchangeRates: ExchangeRate[] = [
 export const getExchangeRate = (tokenSymbol: string): ExchangeRate | undefined => {
   return mockExchangeRates.find(rate => rate.symbol === tokenSymbol)
 }
+

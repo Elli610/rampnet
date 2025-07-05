@@ -43,6 +43,7 @@ export default function WisePaymentProcessor({
   const [paymentReference, setPaymentReference] = useState('')
   const [isLoadingReference, setIsLoadingReference] = useState(true)
   const [hasApiError, setHasApiError] = useState(false)
+  const [copySuccess, setCopySuccess] = useState(false)
 
   // Générer la référence de paiement via l'API
   useEffect(() => {
@@ -158,6 +159,8 @@ export default function WisePaymentProcessor({
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
+    setCopySuccess(true)
+    setTimeout(() => setCopySuccess(false), 2000) // Reset after 2 seconds
   }
 
   const handlePaymentConfirmation = () => {
@@ -218,7 +221,7 @@ export default function WisePaymentProcessor({
             </div>
             <div className="flex justify-between border-t border-blue-200 pt-2">
               <span className="text-blue-700">Reference:</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1 ml-2">
                 {isLoadingReference ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -232,15 +235,33 @@ export default function WisePaymentProcessor({
                     Retry
                   </button>
                 ) : (
-                  <>
-                    <span className="font-mono font-semibold text-red-600">{paymentReference}</span>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-mono font-semibold text-red-600 text-xs break-all flex-1">
+                      {paymentReference}
+                    </span>
                     <button
                       onClick={() => copyToClipboard(paymentReference)}
-                      className="text-blue-600 hover:text-blue-800"
+                      className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-all duration-200 ${
+                        copySuccess 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                      }`}
                     >
-                      <Copy className="w-4 h-4" />
+                      {copySuccess ? (
+                        <>
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </>
+                      )}
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
@@ -259,8 +280,8 @@ export default function WisePaymentProcessor({
                 <p>Failed to generate payment reference. Please click Retry to try again.</p>
               ) : (
                 <p>
-                  Make sure to include the reference <strong>{paymentReference}</strong> in your Wise transfer. 
-                  This ensures your payment is processed correctly and tokens are sent to the right address.
+                  <b>Make sure to include the reference in your Wise transfer. 
+                  This ensures your payment is processed correctly and tokens are sent to the right address.</b>
                 </p>
               )}
             </div>
@@ -320,7 +341,7 @@ export default function WisePaymentProcessor({
       <div className="bg-gray-50 rounded-xl p-4">
         <p className="text-sm text-gray-600">
           Your tokens will be automatically sent to <span className="font-mono font-medium">
-            {transferData.recipientAddress}
+            {transferData.recipientAddress.slice(0, 8)}...{transferData.recipientAddress.slice(-6)}
           </span> on {transferData.selectedChain.name} once the payment is confirmed.
         </p>
       </div>
