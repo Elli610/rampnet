@@ -11,12 +11,6 @@ contract MasterIssuer {
 
     error InvalidProof();
 
-    function isWeb2JsonProofValid(
-        IWeb2Json.Proof calldata _proof
-    ) private view returns (bool) {
-        return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
-    }
-
     function submitProof(IWeb2Json.Proof calldata proof) public {
         require(isWeb2JsonProofValid(proof), "Invalid Proof");
 
@@ -29,5 +23,10 @@ contract MasterIssuer {
 
         emit LengthUpdated(totalFacts, factLength);
     }
-}
 
+    function isWeb2JsonProofValid(
+        IWeb2Json.Proof calldata _proof
+    ) private view returns (bool) {
+        return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
+    }
+}
