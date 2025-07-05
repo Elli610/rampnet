@@ -5,8 +5,10 @@ import {Script} from "forge-std/Script.sol";
 import {console} from "forge-std/console.sol";
 import {MasterIssuer} from "../contracts/MasterIssuer.sol";
 
-// forge script scripts/DeployMasterIssuer.s.sol:DeployMasterIssuer \
-//                 --rpc-url https://ethereum-holesky-rpc.publicnode.com --broadcast
+/*
+forge script scripts/DeployMasterIssuer.s.sol:DeployMasterIssuer \
+                --rpc-url https://coston2-api.flare.network/ext/C/rpc --broadcast
+*/
 contract DeployMasterIssuer is Script {
     function run() external {
         // Get the private key from environment variable

@@ -7,16 +7,16 @@ import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Js
 contract MasterIssuer {
     uint256 public totalQueries;
 
-    event DataUpdated(uint256 indexed totalQueries, string response);
+    event DataUpdated(uint256 indexed totalQueries, uint256 response);
 
     error InvalidProof();
 
     function submitProof(IWeb2Json.Proof calldata proof) public {
-        require(isWeb2JsonProofValid(proof), "Invalid Proof");
+        if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
 
-        string memory response = abi.decode(
+        uint256 response = abi.decode(
             proof.data.responseBody.abiEncodedData,
-            (string)
+            (uint256)
         );
 
         totalQueries++;
