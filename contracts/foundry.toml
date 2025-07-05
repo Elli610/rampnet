@@ -3,6 +3,7 @@ solc-version = '0.8.25'
 src = 'contracts'
 out = 'out'
 test = 'test/foundry'
+evm_version = 'london'
 cache_path = 'cache/foundry'
 verbosity = 3
 optimize = true
