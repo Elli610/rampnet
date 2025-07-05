@@ -173,7 +173,7 @@ function HomeContent() {
               </div>
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Omnichain Ready</h3>
               <p className="text-gray-600 leading-relaxed text-lg">
-                Support for multiple chains including Mantle, Flow, Hedera, XRPL, and more via LayerZero & Flare.
+                Support for multiple chains including Flare, Hedera and more to come via LayerZero & Flare FDC.
               </p>
             </div>
           </div>
@@ -231,13 +231,10 @@ function HomeContent() {
             <p className="text-center text-gray-400 text-xl mb-16">
               Connect to the blockchain ecosystem of your choice
             </p>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
+            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-10">
               {[
-                { name: 'Mantle', color: 'from-green-400 to-green-600', logo: 'mantle_logo.png' },
-                { name: 'Katana', color: 'from-red-400 to-red-600', logo: 'katana_logo.png' },
-                { name: 'Flow', color: 'from-blue-400 to-blue-600', logo: 'flow_logo.png' },
+                { name: 'Flare', color: 'from-red-400 to-red-600', logo: 'flare_logo.png' },
                 { name: 'Hedera', color: 'from-purple-400 to-purple-600', logo: 'hedera_logo.png' },
-                { name: 'Zircuit', color: 'from-yellow-400 to-yellow-600', logo: 'zircuit_logo.png' },
                 { name: 'XRPL', color: 'from-indigo-400 to-indigo-600', logo: 'xrpl_logo.png' }
               ].map((chain) => (
                 <div key={chain.name} className="text-center group">
@@ -277,13 +274,6 @@ function HomeContent() {
             <p className="text-gray-400 mb-8 text-lg">
               &copy; 2025 RampNet. Built for the omnichain future.
             </p>
-            <div className="flex justify-center space-x-8">
-              {['Privacy', 'Terms', 'Docs', 'Support'].map((link) => (
-                <a key={link} href="#" className="text-gray-400 hover:text-white transition-colors duration-300 text-lg font-medium hover:scale-105 transform">
-                  {link}
-                </a>
-              ))}
-            </div>
           </div>
         </div>
       </footer>
