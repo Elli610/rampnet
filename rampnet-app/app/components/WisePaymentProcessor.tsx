@@ -487,12 +487,6 @@ export default function WisePaymentProcessor({
             Check Again
           </button>
         )}
-        <button
-          onClick={onBack}
-          className='text-gray-600 hover:text-gray-800 transition-colors px-4 py-2'
-        >
-          Cancel Transfer
-        </button>
       </div>
     </div>
   );
