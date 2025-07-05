@@ -14,6 +14,7 @@ import {
 import Image from 'next/image'
 import { SUPPORTED_CHAINS, type Chain, type Token } from '../../config/chains'
 import { ApiService, type SwapQuote } from '../api/api'
+import WisePaymentProcessor, { type TransferData } from './WisePaymentProcessor'
 
 interface SwapInterfaceProps {
   userWallet?: string
@@ -28,22 +29,11 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
   const [useConnectedWallet, setUseConnectedWallet] = useState(false)
   const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
   
   // UI state
   const [showChainDropdown, setShowChainDropdown] = useState(false)
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
-  const [transferResult, setTransferResult] = useState<{
-    success: boolean
-    transactionId: string
-    wiseInstructions: {
-      accountName: string
-      accountNumber: string
-      sortCode: string
-      reference: string
-      amount: number
-    }
-  } | null>(null)
+  const [showPaymentProcessor, setShowPaymentProcessor] = useState(false)
+  const [transferData, setTransferData] = useState<TransferData | null>(null)
 
   // Update selected token when chain changes
   useEffect(() => {
@@ -109,87 +99,46 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
     }
   }
 
-  const handleInitiateTransfer = async () => {
+  const handleInitiateTransfer = () => {
     if (!quote || !recipientAddress) return
     
-    setIsProcessing(true)
-    try {
-      const result = await ApiService.initiateTransfer(
-        parseFloat(inputAmount),
-        selectedChain.id,
-        selectedToken.symbol,
-        recipientAddress
-      )
-      setTransferResult(result)
-      setShowConfirmModal(false)
-    } catch (error) {
-      console.error('Transfer failed:', error)
-    } finally {
-      setIsProcessing(false)
+    console.log('Transfer initiated directly!')
+    
+    // Préparer les données de transfert
+    const transferData: TransferData = {
+      amount: quote.outputAmount,
+      usdAmount: parseFloat(inputAmount),
+      recipientAddress,
+      selectedChain,
+      selectedToken,
+      exchangeRate: quote.exchangeRate,
+      fees: quote.fees
     }
+
+    console.log('Transfer data:', transferData)
+    setTransferData(transferData)
+    setShowPaymentProcessor(true)
+    console.log('Should show processor now')
   }
 
-  if (transferResult) {
+  const handleBackToSwap = () => {
+    setShowPaymentProcessor(false)
+    setTransferData(null)
+  }
+
+  // Afficher le WisePaymentProcessor si demandé
+  if (showPaymentProcessor && transferData) {
+    console.log('Rendering WisePaymentProcessor')
     return (
-      <div className="bg-white/70 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8">
-        <div className="text-center space-y-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">Transfer Initiated!</h3>
-            <p className="text-gray-600">Please complete the Wise transfer with the details below</p>
-          </div>
-
-          <div className="bg-blue-50 rounded-xl p-6 text-left">
-            <h4 className="font-semibold text-blue-900 mb-4">Wise Transfer Instructions</h4>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-blue-700">Account Name:</span>
-                <span className="font-mono font-medium">{transferResult.wiseInstructions.accountName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-blue-700">Account Number:</span>
-                <span className="font-mono font-medium">{transferResult.wiseInstructions.accountNumber}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-blue-700">Sort Code:</span>
-                <span className="font-mono font-medium">{transferResult.wiseInstructions.sortCode}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-blue-700">Reference:</span>
-                <span className="font-mono font-medium text-red-600">{transferResult.wiseInstructions.reference}</span>
-              </div>
-              <div className="flex justify-between border-t border-blue-200 pt-3">
-                <span className="text-blue-700 font-semibold">Amount:</span>
-                <span className="font-bold text-lg">${transferResult.wiseInstructions.amount}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-            <p className="text-sm text-yellow-800">
-              <strong>Important:</strong> Make sure to include the reference &quot;{transferResult.wiseInstructions.reference}&quot; in your Wise transfer to ensure proper processing.
-            </p>
-          </div>
-
-          <button
-            onClick={() => {
-              setTransferResult(null)
-              setInputAmount('')
-              setRecipientAddress('')
-              setUseConnectedWallet(false)
-            }}
-            className="btn-primary"
-          >
-            Start New Transfer
-          </button>
-        </div>
-      </div>
+      <WisePaymentProcessor
+        transferData={transferData}
+        onBack={handleBackToSwap}
+        onComplete={() => {}} // TODO: gérer la completion
+      />
     )
   }
 
+  // Render main swap interface
   return (
     <div className="bg-white/70 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8">
       <div className="flex items-center gap-3 mb-8">
@@ -377,7 +326,6 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary-600 font-bold text-xs">W</span>
                   </div>
                   <span className="font-mono">
                     {userWallet.slice(0, 6)}...{userWallet.slice(-4)}
@@ -430,7 +378,7 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
 
         {/* Action Button */}
         <button
-          onClick={() => setShowConfirmModal(true)}
+          onClick={handleInitiateTransfer}
           disabled={!quote || !recipientAddress || isLoadingQuote}
           className="w-full btn-primary py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -447,80 +395,6 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
           )}
         </button>
       </div>
-
-      {/* Confirmation Modal */}
-      {showConfirmModal && quote && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowConfirmModal(false)}></div>
-
-            <div className="inline-block w-full max-w-lg p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Confirm Transfer</h3>
-                <button
-                  onClick={() => setShowConfirmModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {/* Transfer Summary */}
-                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">You send</span>
-                    <span className="font-semibold">${inputAmount} USD</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">You receive</span>
-                    <span className="font-semibold">{quote.outputAmount.toFixed(6)} {selectedToken.symbol}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Network</span>
-                    <span className="font-semibold">{selectedChain.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Recipient</span>
-                    <span className="font-mono text-sm">{recipientAddress.slice(0, 8)}...{recipientAddress.slice(-6)}</span>
-                  </div>
-                  {useConnectedWallet && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Address type</span>
-                      <span className="text-sm text-primary-600 font-medium">Connected Wallet</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowConfirmModal(false)}
-                    className="flex-1 btn-secondary"
-                    disabled={isProcessing}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleInitiateTransfer}
-                    disabled={isProcessing}
-                    className="flex-1 btn-primary disabled:opacity-50"
-                  >
-                    {isProcessing ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </div>
-                    ) : (
-                      'Confirm Transfer'
-                    )}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
