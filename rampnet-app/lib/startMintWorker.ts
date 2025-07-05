@@ -1,5 +1,6 @@
 import { mintQueue } from '@/lib/mintQueue';
 import { WisePaymentMemo } from '@/types';
+import Payment from '@/_models/Payment';
 
 const WISE_API_TOKEN = process.env.WISE_API_KEY!;
 
@@ -20,7 +21,9 @@ async function fetchTransferDetails(transferId: string) {
   return await res.json();
 }
 
-function decodeMemo(memo: string): WisePaymentMemo {
+async function decodeMemo(memo: string): Promise<WisePaymentMemo> {
+  const payment = await Payment.findOne({ memo });
+  await payment.update({ PaymentStatus: 'processing' });
   if (!memo.startsWith('ONRAMP:')) {
     throw new Error('Invalid memo format');
   }
@@ -44,7 +47,7 @@ async function processJob(job: { transferId: string }) {
     throw new Error('Missing memo in transfer');
   }
 
-  const decoded: WisePaymentMemo = decodeMemo(memo);
+  const decoded: WisePaymentMemo = await decodeMemo(memo);
 
   console.log('✅ Transfer Info:');
   console.log('Amount:', amount);
