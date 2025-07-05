@@ -18,42 +18,6 @@ export interface Chain {
 }
 
 export const SUPPORTED_CHAINS: Chain[] = [
-  /* {
-    id: 'mantle',
-    name: 'Mantle',
-    symbol: 'MNT',
-    icon: '/mantle_logo.png',
-    rpcUrl: 'https://rpc.mantle.xyz',
-    blockExplorer: 'https://explorer.mantle.xyz',
-    addressType: 'evm',
-    chainId: 5000,
-    supportedTokens: [
-      {
-        symbol: 'USDT0',
-        name: 'USDT0 by LayerZero',
-        decimals: 6,
-        icon: '/usdt0_logo.png',
-      },
-    ],
-  },
-  {
-    id: 'flow',
-    name: 'Flow',
-    symbol: 'FLOW',
-    icon: '/flow_logo.png',
-    rpcUrl: 'https://access-mainnet-beta.onflow.org',
-    blockExplorer: 'https://flowscan.org',
-    addressType: 'other',
-    chainId: 747,
-    supportedTokens: [
-      {
-        symbol: 'USDT0',
-        name: 'USDT0 by LayerZero',
-        decimals: 6,
-        icon: '/usdt0_logo.png',
-      },
-    ],
-  },*/
   {
     id: 'hedera',
     name: 'Hedera',
@@ -72,24 +36,6 @@ export const SUPPORTED_CHAINS: Chain[] = [
       },
     ],
   },
-  /* {
-    id: 'zircuit',
-    name: 'Zircuit',
-    symbol: 'ZRC',
-    icon: '/zircuit_logo.png',
-    rpcUrl: 'https://zircuit1-mainnet.p2pify.com',
-    blockExplorer: 'https://explorer.zircuit.com',
-    addressType: 'evm',
-    chainId: 48900,
-    supportedTokens: [
-      {
-        symbol: 'USDT0',
-        name: 'USDT0 by LayerZero',
-        decimals: 6,
-        icon: '/usdt0_logo.png',
-      },
-    ],
-  },*/
   {
     id: 'xrpl',
     name: 'XRPL',
@@ -105,24 +51,6 @@ export const SUPPORTED_CHAINS: Chain[] = [
         name: 'XRP',
         decimals: 6,
         icon: '/xrp_logo.png',
-      },
-    ],
-  },
-  {
-    id: 'katana',
-    name: 'Katana',
-    symbol: 'KAT',
-    icon: '/katana_logo.png',
-    rpcUrl: 'https://rpc.katana.network',
-    blockExplorer: 'https://explorer.katana.network',
-    addressType: 'evm',
-    chainId: 11111,
-    supportedTokens: [
-      {
-        symbol: 'USDT0',
-        name: 'USDT0 by LayerZero',
-        decimals: 6,
-        icon: '/usdt0_logo.png',
       },
     ],
   },
