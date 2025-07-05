@@ -1,13 +1,7 @@
 // app/api/check/payment/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-
-// Simulate a database of pending payments
-const pendingPayments = new Map<string, {
-  memo: string
-  status: 'pending' | 'confirmed' | 'failed'
-  createdAt: number
-  confirmedAt?: number
-}>()
+import connectDB from '../../../../lib/mongodb'
+import Payment from '../../../../_models/Payment'
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,71 +17,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Simulate verification delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Connect to database
+    await connectDB()
 
-    // Check if payment already exists in our "database"
-    let payment = pendingPayments.get(memo)
+    // Find payment by memo
+    const payment = await Payment.findOne({ memo })
 
     if (!payment) {
-      // Create a new pending payment
-      payment = {
-        memo,
-        status: 'pending',
-        createdAt: Date.now()
-      }
-      pendingPayments.set(memo, payment)
-      
-      console.log('Created new pending payment:', payment)
+      // Payment not found in database
+      console.log('Payment not found in database for memo:', memo)
       
       return NextResponse.json({
         success: true,
-        status: 'pending',
-        message: 'Payment not found yet, checking...'
+        status: 'not_found',
+        message: 'Payment not found in our records'
       })
     }
 
-    // Simulate payment confirmation after 30 seconds
-    const timeElapsed = Date.now() - payment.createdAt
-    const shouldConfirm = timeElapsed > 30000 // 30 seconds
+    console.log('Payment found:', {
+      memo: payment.memo,
+      status: payment.paymentStatus,
+      txHash: payment.txHash,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt
+    })
 
-    if (shouldConfirm && payment.status === 'pending') {
-      payment.status = 'confirmed'
-      payment.confirmedAt = Date.now()
-      pendingPayments.set(memo, payment)
-      
-      console.log('Payment confirmed:', payment)
-      
-      return NextResponse.json({
-        success: true,
-        status: 'confirmed',
-        message: 'Payment confirmed successfully!',
-        confirmedAt: payment.confirmedAt
-      })
-    }
-
-    // Simulate failure after 2 minutes (optional)
-    if (timeElapsed > 120000) { // 2 minutes
-      payment.status = 'failed'
-      pendingPayments.set(memo, payment)
-      
-      console.log('Payment failed:', payment)
-      
-      return NextResponse.json({
-        success: true,
-        status: 'failed',
-        message: 'Payment verification failed'
-      })
-    }
-
-    // Return current status
-    console.log('Payment still pending:', payment)
-    
+    // Return payment status
     return NextResponse.json({
       success: true,
-      status: payment.status,
-      message: `Payment is ${payment.status}`,
-      timeElapsed: Math.round(timeElapsed / 1000) // in seconds
+      status: payment.paymentStatus,
+      txHash: payment.txHash,
+      message: `Payment is ${payment.paymentStatus}`,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt
     })
 
   } catch (error) {
@@ -104,3 +66,28 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Optional: GET route to list all payments (for admin/debug)
+export async function GET() {
+  try {
+    await connectDB()
+    
+    const payments = await Payment.find({})
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .select('memo paymentStatus txHash createdAt updatedAt')
+
+    return NextResponse.json({
+      success: true,
+      payments,
+      count: payments.length
+    })
+
+  } catch (error) {
+    console.error('Error fetching payments:', error)
+    
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch payments' },
+      { status: 500 }
+    )
+  }
+}
