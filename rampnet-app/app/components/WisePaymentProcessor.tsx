@@ -6,7 +6,8 @@ import {
   QrCode,
   Clock,
   AlertCircle,
-  Copy
+  Copy,
+  CheckCircle
 } from 'lucide-react'
 import Image from 'next/image'
 import { Chain, Token } from '../../config/chains'
@@ -44,6 +45,10 @@ export default function WisePaymentProcessor({
   const [isLoadingReference, setIsLoadingReference] = useState(true)
   const [hasApiError, setHasApiError] = useState(false)
   const [copySuccess, setCopySuccess] = useState(false)
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false)
+  const [paymentTimeout, setPaymentTimeout] = useState(false)
+  const [checkAttempts, setCheckAttempts] = useState(0)
+  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null)
 
   // Générer la référence de paiement via l'API
   useEffect(() => {
@@ -52,7 +57,6 @@ export default function WisePaymentProcessor({
         setIsLoadingReference(true)
         setHasApiError(false)
         
-        // Mapper le network vers le format attendu par l'API
         const networkMapping: { [key: string]: string } = {
           'mantle': 'MANTLE',
           'flow': 'FLOW', 
@@ -160,15 +164,93 @@ export default function WisePaymentProcessor({
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     setCopySuccess(true)
-    setTimeout(() => setCopySuccess(false), 2000) // Reset after 2 seconds
+    setTimeout(() => setCopySuccess(false), 2000)
+  }
+
+  const checkPaymentStatus = async () => {
+    try {
+      console.log('Checking payment status for memo:', paymentReference)
+      
+      const response = await fetch('/api/check/payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memo: paymentReference
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`Payment check failed: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('Payment check response:', data)
+
+      if (data.success && data.status === 'confirmed') {
+        setIsCheckingPayment(false)
+        setCurrentStep('completed')
+        return true
+      }
+      
+      return false
+    } catch (error) {
+      console.error('Payment check error:', error)
+      return false
+    }
+  }
+
+  const startPaymentPolling = () => {
+    let attempts = 0
+    const maxAttempts = 6 // 6 attempts * 10 seconds = 1 minute
+
+    const interval = setInterval(async () => {
+      attempts++
+      setCheckAttempts(attempts)
+      
+      console.log(`Payment check attempt ${attempts}/${maxAttempts}`)
+      const paymentConfirmed = await checkPaymentStatus()
+      
+      if (paymentConfirmed) {
+        clearInterval(interval)
+        setPollInterval(null)
+        return
+      }
+
+      if (attempts >= maxAttempts) {
+        clearInterval(interval)
+        setPollInterval(null)
+        setIsCheckingPayment(false)
+        setPaymentTimeout(true)
+      }
+    }, 10000) // Check every 10 seconds
+
+    setPollInterval(interval)
   }
 
   const handlePaymentConfirmation = () => {
     setCurrentStep('payment_pending')
+    setIsCheckingPayment(true)
+    setPaymentTimeout(false)
+    setCheckAttempts(0)
+    startPaymentPolling()
+  }
+
+  const retryPaymentCheck = () => {
+    // Clean up existing interval if any
+    if (pollInterval) {
+      clearInterval(pollInterval)
+      setPollInterval(null)
+    }
+    
+    setPaymentTimeout(false)
+    setIsCheckingPayment(true)
+    setCheckAttempts(0)
+    startPaymentPolling()
   }
 
   const renderQRStep = () => {
-    console.log('Rendering QR step')
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -312,12 +394,22 @@ export default function WisePaymentProcessor({
   const renderPaymentPendingStep = () => (
     <div className="space-y-6 text-center">
       <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto">
-        <Clock className="w-8 h-8 text-yellow-600" />
+        {isCheckingPayment ? (
+          <div className="w-8 h-8 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+        ) : (
+          <Clock className="w-8 h-8 text-yellow-600" />
+        )}
       </div>
+      
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Confirmation Pending</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          {paymentTimeout ? 'Payment Taking Longer Than Expected' : 'Payment Confirmation Pending'}
+        </h2>
         <p className="text-gray-600">
-          We&apos;re waiting for your Wise payment to be confirmed. This usually takes 1-3 minutes.
+          {paymentTimeout 
+            ? 'Your payment is taking longer than usual to process. Please wait or try checking again.'
+            : "We're waiting for your Wise payment to be confirmed. This usually takes 1-3 minutes."
+          }
         </p>
       </div>
 
@@ -325,7 +417,9 @@ export default function WisePaymentProcessor({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-blue-700">Payment Reference:</span>
-            <span className="font-mono font-semibold">{paymentReference}</span>
+            <span className="font-mono font-semibold text-xs break-all flex-1 ml-2 text-right">
+              {paymentReference}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-blue-700">Expected Amount:</span>
@@ -333,7 +427,18 @@ export default function WisePaymentProcessor({
           </div>
           <div className="flex justify-between">
             <span className="text-blue-700">Status:</span>
-            <span className="text-yellow-600 font-medium">Checking payment...</span>
+            {isCheckingPayment ? (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-yellow-600 font-medium">
+                  Checking payment... (Attempt {checkAttempts}/6)
+                </span>
+              </div>
+            ) : paymentTimeout ? (
+              <span className="text-orange-600 font-medium">Timeout - Payment not found</span>
+            ) : (
+              <span className="text-gray-600 font-medium">Waiting for confirmation</span>
+            )}
           </div>
         </div>
       </div>
@@ -346,11 +451,72 @@ export default function WisePaymentProcessor({
         </p>
       </div>
 
+      <div className="flex gap-3 justify-center">
+        {paymentTimeout && (
+          <button
+            onClick={retryPaymentCheck}
+            className="btn-primary px-6 py-2"
+          >
+            Check Again
+          </button>
+        )}
+        <button
+          onClick={onBack}
+          className="text-gray-600 hover:text-gray-800 transition-colors px-4 py-2"
+        >
+          Cancel Transfer
+        </button>
+      </div>
+    </div>
+  )
+
+  const renderCompletedStep = () => (
+    <div className="space-y-6 text-center">
+      <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+        <CheckCircle className="w-8 h-8 text-green-600" />
+      </div>
+      
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Payment Confirmed!</h2>
+        <p className="text-gray-600">
+          Your Wise payment has been confirmed and your tokens are being processed.
+        </p>
+      </div>
+
+      <div className="bg-green-50 rounded-xl p-6">
+        <div className="space-y-3 text-sm">
+          <div className="flex justify-between">
+            <span className="text-green-700">Payment Reference:</span>
+            <span className="font-mono font-semibold text-xs break-all flex-1 ml-2 text-right">
+              {paymentReference}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-green-700">Amount Received:</span>
+            <span className="font-semibold">${transferData.usdAmount.toFixed(2)} USD</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-green-700">Status:</span>
+            <span className="text-green-600 font-medium">✓ Confirmed</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gray-50 rounded-xl p-4">
+        <p className="text-sm text-gray-600">
+          Your {transferData.amount.toFixed(6)} {transferData.selectedToken.symbol} tokens will be sent to{' '}
+          <span className="font-mono font-medium">
+            {transferData.recipientAddress.slice(0, 8)}...{transferData.recipientAddress.slice(-6)}
+          </span>{' '}
+          on {transferData.selectedChain.name} within the next few minutes.
+        </p>
+      </div>
+
       <button
         onClick={onBack}
-        className="text-gray-600 hover:text-gray-800 transition-colors"
+        className="btn-primary px-6 py-2"
       >
-        Cancel Transfer
+        Start New Transfer
       </button>
     </div>
   )
@@ -358,9 +524,9 @@ export default function WisePaymentProcessor({
   return (
     <div className="bg-white/70 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8">
       {(() => {
-        console.log('Rendering step:', currentStep)
         if (currentStep === 'qr_display') return renderQRStep()
         if (currentStep === 'payment_pending') return renderPaymentPendingStep()
+        if (currentStep === 'completed') return renderCompletedStep()
         return <div>Unknown step: {currentStep}</div>
       })()}
     </div>
