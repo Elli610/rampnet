@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { 
   ArrowUpDown, 
   DollarSign,
@@ -29,11 +29,17 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
   const [useConnectedWallet, setUseConnectedWallet] = useState(false)
   const [quote, setQuote] = useState<SwapQuote | null>(null)
   const [isLoadingQuote, setIsLoadingQuote] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   
   // UI state
   const [showChainDropdown, setShowChainDropdown] = useState(false)
   const [showPaymentProcessor, setShowPaymentProcessor] = useState(false)
   const [transferData, setTransferData] = useState<TransferData | null>(null)
+
+  // Fix hydration issues
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   // Update selected token when chain changes
   useEffect(() => {
@@ -77,10 +83,38 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
     }
   }, [inputAmount, selectedToken, selectedChain])
 
-  const handleChainSelect = (chain: Chain) => {
+  const handleChainSelect = useCallback((chain: Chain) => {
     setSelectedChain(chain)
     setShowChainDropdown(false)
-  }
+  }, [])
+
+  const toggleChainDropdown = useCallback((e: React.MouseEvent) => {
+    if (!isMounted) return
+    e.preventDefault()
+    e.stopPropagation()
+    setShowChainDropdown(prev => !prev)
+  }, [isMounted])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!isMounted) return
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.chain-dropdown-container')) {
+        setShowChainDropdown(false)
+      }
+    }
+
+    if (showChainDropdown) {
+      // Use passive listener for better performance in production
+      document.addEventListener('click', handleClickOutside, { passive: true })
+    }
+
+    return () => {
+      document.removeEventListener('click', handleClickOutside)
+    }
+  }, [showChainDropdown, isMounted])
 
   const handleRecipientChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -139,6 +173,17 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
   }
 
   // Render main swap interface
+  if (!isMounted) {
+    return (
+      <div className="bg-white/70 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-white/70 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8">
       <div className="flex items-center gap-3 mb-8">
@@ -190,10 +235,11 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
           <label className="block text-sm font-medium text-gray-700 mb-3">To</label>
           <div className="space-y-3">
             {/* Chain Selector */}
-            <div className="relative">
+            <div className="relative chain-dropdown-container">
               <button
-                onClick={() => setShowChainDropdown(!showChainDropdown)}
+                onClick={toggleChainDropdown}
                 className="w-full flex items-center justify-between bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors"
+                type="button"
               >
                 <div className="flex items-center gap-3">
                   <Image
@@ -212,13 +258,18 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
               </button>
 
               {/* Chain Dropdown */}
-              {showChainDropdown && (
+              {isMounted && showChainDropdown && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-64 overflow-y-auto">
                   {SUPPORTED_CHAINS.map((chain) => (
                     <button
                       key={chain.id}
-                      onClick={() => handleChainSelect(chain)}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleChainSelect(chain)
+                      }}
                       className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                      type="button"
                     >
                       <Image
                         src={chain.icon}
@@ -326,6 +377,7 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <div className="w-6 h-6 bg-primary-100 rounded-full flex items-center justify-center">
+                    <span className="text-primary-600 font-bold text-xs">W</span>
                   </div>
                   <span className="font-mono">
                     {userWallet.slice(0, 6)}...{userWallet.slice(-4)}
