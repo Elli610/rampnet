@@ -62,15 +62,6 @@ export default function WisePaymentProcessor({
         setIsLoadingReference(true);
         setHasApiError(false);
 
-        const networkMapping: { [key: string]: string } = {
-          mantle: 'MANTLE',
-          flow: 'FLOW',
-          hedera: 'HEDERA',
-          zircuit: 'ZIRCUIT',
-          xrpl: 'XRPL',
-          katana: 'KATANA',
-        };
-
         const apiPayload = {
           usdAmount: transferData.usdAmount,
           address: transferData.recipientAddress,
@@ -573,4 +564,3 @@ export default function WisePaymentProcessor({
     </div>
   );
 }
-
