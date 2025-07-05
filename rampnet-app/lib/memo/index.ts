@@ -110,30 +110,6 @@ function decodePackedBytes(packedData: Uint8Array): {
   };
 }
 
-// Example usage and testing
-function example() {
-  try {
-    const packedData = encodePackedBytes(
-      "742d35Cc6634C0532925a3b8D400aA888E86D14b", // Ethereum address
-      1,                                            // Mainnet chain ID
-      "USDC",                                       // Currency ticker
-      123456789n                                    // $1,234,567.89 in cents
-    );
-    
-    console.log('Packed data length:', packedData.length);
-    console.log('Packed data (hex):', Array.from(packedData).map(b => b.toString(16).padStart(2, '0')).join(''));
-    
-    // Verify by decoding
-    const decoded = decodePackedBytes(packedData);
-    console.log('Decoded:', decoded);
-    
-  } catch (error) {
-    console.error('Error:', error);
-  }
-}
-
-// example();
-
 export { encodePackedBytes, decodePackedBytes };
 
 export function Uint8ArrayToHex(uint8Array: Uint8Array): string {
