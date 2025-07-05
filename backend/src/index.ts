@@ -4,7 +4,7 @@ import "dotenv/config";
 
 const { WEB2JSON_VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL, WISE_API_KEY } = process.env;
 
-const paymentId = 1615093831;
+const paymentId = 1615160706;
 
 // Request data
 const apiUrl = `https://wise.com/api/v3/payment/details`;

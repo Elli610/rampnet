@@ -5,7 +5,7 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {TokenSender} from "./TokenSender.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {MockErc20} from "./MockErc20.sol";
 struct DTO {
     string paymentStatus;
     uint256 recipientId;
@@ -15,6 +15,7 @@ struct DTO {
 
 uint256 constant FLARE_LZ_CHAIN_ID = 30295;
 uint constant HEDERA_LZ_CHAIN_ID = 30316;
+MockErc20 constant USDT0_FLARE = MockErc20(0x561AfB7e60E1Ea4e1Bdf98D738e952146f3CCE3f);
 
 contract PaymentProcessor {
 
@@ -22,7 +23,6 @@ contract PaymentProcessor {
 
     // Lz chainId -> currencyId -> token address
     mapping(uint256 => mapping(bytes6 => address)) public currencies;
-
 
     event DecodedReference(
         address indexed ethereumAddress,
@@ -46,27 +46,29 @@ contract PaymentProcessor {
         // Register tokens for Flare Mainnet and Hedera Mainnet
         currencies[FLARE_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: find real token address on flare coston2
         emit TokenRegistered(
-            30295,
+            FLARE_LZ_CHAIN_ID,
             bytes6("Fxrp"),
             address(1)
         );
-        currencies[FLARE_LZ_CHAIN_ID][bytes6("USDT0")] = address(2); // todo: deploy mock token
+        currencies[FLARE_LZ_CHAIN_ID][bytes6("USDT0")] = address(USDT0_FLARE); // Mocked USDT0 on Flare Coston2
         emit TokenRegistered(
-            30295,
+            FLARE_LZ_CHAIN_ID,
             bytes6("USDT0"),
             address(2)
         );
+        // Mint some USDT0 tokens to this contract (to emulate a real scenario)
+        USDT0_FLARE.mint(address(this), 10_000 ether); // Mint 10_000 USDT0 token (18 decimals)
 
         // Hedera Mainnet
         currencies[HEDERA_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: deploy mock token  
         emit TokenRegistered(
-            30316,
+            HEDERA_LZ_CHAIN_ID,
             bytes6("Fxrp"),
             address(1)
         );
         currencies[HEDERA_LZ_CHAIN_ID][bytes6("USDT0")] = address(2); // todo: deploy mock token 
         emit TokenRegistered(
-            30316,
+            HEDERA_LZ_CHAIN_ID,
             bytes6("USDT0"),
             address(2)
         ); 
