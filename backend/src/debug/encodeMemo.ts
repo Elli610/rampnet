@@ -22,16 +22,16 @@ function encodePackedBytes(
     throw new Error('Chain ID must be between 0 and 16777215 (3 bytes max).');
   }
   
-  if (currencyTicker.length > 8) {
-    throw new Error('Currency ticker must be 8 hex characters or less.');
+  if (currencyTicker.length > 6) {
+    throw new Error('Currency ticker must be 6 hex characters or less.');
   }
   
   if (usdAmountCents < 0n || usdAmountCents > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
-  // Calculate total size: 20 (address) + 3 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
-  const buffer = new Uint8Array(45);
+  // Calculate total size: 20 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
+  const buffer = new Uint8Array(46);
   let offset = 0;
   
   // 1. Ethereum address (20 bytes)
@@ -39,7 +39,8 @@ function encodePackedBytes(
     buffer[offset++] = parseInt(address.substr(i * 2, 2), 16);
   }
   
-  // 2. Chain ID (3 bytes, big-endian)
+  // 2. Chain ID (4 bytes, big-endian)
+  buffer[offset++] = (chainId >> 24) & 0xFF;
   buffer[offset++] = (chainId >> 16) & 0xFF;
   buffer[offset++] = (chainId >> 8) & 0xFF;
   buffer[offset++] = chainId & 0xFF;
