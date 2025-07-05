@@ -6,27 +6,28 @@ import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Js
 
 contract MasterIssuer {
     uint256 public totalFacts;
-    
+
     event LengthUpdated(uint256 indexed factId, uint256 length);
 
     error InvalidProof();
-    
+
     function isWeb2JsonProofValid(
         IWeb2Json.Proof calldata _proof
     ) private view returns (bool) {
         return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
     }
-    
+
     function submitProof(IWeb2Json.Proof calldata proof) public {
-        require(isWeb2JsonProofValid(proof), InvalidProof());
-        
+        require(isWeb2JsonProofValid(proof), "Invalid Proof");
+
         uint256 factLength = abi.decode(
             proof.data.responseBody.abiEncodedData,
             (uint256)
         );
-        
+
         totalFacts++;
-        
+
         emit LengthUpdated(totalFacts, factLength);
     }
 }
+
