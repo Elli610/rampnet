@@ -127,7 +127,10 @@ function HomeContent() {
                 Get Started 
                 <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform duration-300" />
               </button>
-              <button className="btn-secondary text-xl px-10 py-5 hover:bg-gradient-to-r hover:from-gray-50 hover:to-primary-50 border-2 hover:border-primary-300 transition-all duration-300 rounded-2xl shadow-lg hover:shadow-xl">
+              <button
+                onClick={() => window.open("https://github.com/Elli610/rampnet", "_blank")}
+                className="btn-secondary text-xl px-10 py-5 hover:bg-gradient-to-r hover:from-gray-50 hover:to-primary-50 border-2 hover:border-primary-300 transition-all duration-300 rounded-2xl shadow-lg hover:shadow-xl"
+              >
                 Learn More
               </button>
             </div>
@@ -272,7 +275,7 @@ function HomeContent() {
               <span className="text-3xl font-black text-white">RampNet</span>
             </div>
             <p className="text-gray-400 mb-8 text-lg">
-              &copy; 2024 RampNet. Built for the omnichain future.
+              &copy; 2025 RampNet. Built for the omnichain future.
             </p>
             <div className="flex justify-center space-x-8">
               {['Privacy', 'Terms', 'Docs', 'Support'].map((link) => (
