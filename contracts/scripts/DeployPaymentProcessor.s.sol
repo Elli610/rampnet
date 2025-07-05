@@ -6,7 +6,7 @@ import {console} from "forge-std/console.sol";
 import {PaymentProcessor} from "../contracts/PaymentProcessor.sol";
 
 /*
-forge script scripts/DeployMasterIssuer.s.sol:DeployMasterIssuer \
+forge script scripts/DeployPaymentProcessor.s.sol:DeployPaymentProcessor \
                 --rpc-url https://coston2-api.flare.network/ext/C/rpc --broadcast
 */
 contract DeployPaymentProcessor is Script {

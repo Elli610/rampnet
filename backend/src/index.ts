@@ -51,76 +51,93 @@ async function broadcastProof(proof: any, roundId: number) {
 
     const abiCoder = new AbiCoder();
 
-    const responseType = [{
+    const responseType = {
         components: [
             {
-                internalType: 'bytes32',
-                name: 'attestationType',
-                type: 'bytes32'
+                internalType: "bytes32",
+                name: "attestationType",
+                type: "bytes32",
             },
             {
-                internalType: 'bytes32',
-                name: 'sourceId',
-                type: 'bytes32'
+                internalType: "bytes32",
+                name: "sourceId",
+                type: "bytes32",
             },
             {
-                internalType: 'uint64',
-                name: 'votingRound',
-                type: 'uint64'
+                internalType: "uint64",
+                name: "votingRound",
+                type: "uint64",
             },
             {
-                internalType: 'uint64',
-                name: 'lowestUsedTimestamp',
-                type: 'uint64'
+                internalType: "uint64",
+                name: "lowestUsedTimestamp",
+                type: "uint64",
+            },
+            {
+                components: [
+                    {
+                        internalType: "string",
+                        name: "url",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "httpMethod",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "headers",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "queryParams",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "body",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "postProcessJq",
+                        type: "string",
+                    },
+                    {
+                        internalType: "string",
+                        name: "abiSignature",
+                        type: "string",
+                    },
+                ],
+                internalType: "struct IWeb2Json.RequestBody",
+                name: "requestBody",
+                type: "tuple",
             },
             {
                 components: [
                     {
-                        internalType: 'string',
-                        name: 'url',
-                        type: 'string'
+                        internalType: "bytes",
+                        name: "abiEncodedData",
+                        type: "bytes",
                     },
-                    {
-                        internalType: 'string',
-                        name: 'method',
-                        type: 'string'
-                    },
-                    {
-                        internalType: 'string',
-                        name: 'headers',
-                        type: 'string'
-                    },
-                    {
-                        internalType: 'string',
-                        name: 'body',
-                        type: 'string'
-                    }
                 ],
-                internalType: 'struct IWeb2Json.RequestBody',
-                name: 'requestBody',
-                type: 'tuple'
+                internalType: "struct IWeb2Json.ResponseBody",
+                name: "responseBody",
+                type: "tuple",
             },
-            {
-                components: [
-                     {
-                        internalType: 'bytes',
-                        name: 'recipientId',
-                        type: 'bytes'
-                    },
-                ],
-                internalType: 'struct IWeb2Json.ResponseBody',
-                name: 'responseBody',
-                type: 'tuple'
-            }
         ],
-        internalType: 'struct IWeb2Json.Response',
-        name: 'data',
-        type: 'tuple'
-    }];
+        internalType: "struct IWeb2Json.Response",
+        name: "data",
+        type: "tuple",
+    };
 
     console.log("proof:", proof, "\n");
 
-    const decodedResponse = abiCoder.decode(responseType as any, proof.response_hex);
+    const typeString = "tuple(bytes32 attestationType, bytes32 sourceId, uint64 votingRound, uint64 lowestUsedTimestamp, tuple(string url, string httpMethod, string headers, string queryParams, string body, string postProcessJq, string abiSignature) requestBody, tuple(bytes abiEncodedData) responseBody)";
+
+    const decodedResponse = abiCoder.decode([typeString], proof.response_hex);
     console.log("Decoded proof:", decodedResponse, "\n");
 
     const rep = decodedResponse.toArray()[0].toArray();
@@ -146,9 +163,9 @@ async function broadcastProof(proof: any, roundId: number) {
                 abiSignature
             },
             responseBody: {
-                abiEncodedData: abiCoder.encode(["string","uint256","uint256","bytes"], decodedBankTransferData.flatMap(
+                abiEncodedData: abiCoder.encode(["(string,uint256,uint256,bytes)"], [decodedBankTransferData.flatMap(
                     (item: string | bigint) => item
-                )),
+                )]),
             }
         }
     };

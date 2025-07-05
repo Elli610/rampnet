@@ -4,28 +4,65 @@ pragma solidity ^0.8.25;
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 
+// // enum Chains {
+
+// // }
+
+// // enum Tokens {
+// //     USDC,
+// //     USDT,
+// //     FLR
+// // }
+
+struct DTO {
+    string paymentStatus;
+    uint256 recipientId;
+    uint256 recipientAccount;
+    bytes paymentReference;
+}
+
 contract PaymentProcessor {
     
-    event DataUpdated(
+   event DataUpdated(
+        uint256 indexed recipientId,
+        uint256 indexed recipientAccount,
+        string paymentStatus,
+        bytes paymentReference
+    );
+
+    event DecodedReference(
         address indexed ethereumAddress,
-        uint256 indexed chainId,
+        uint256 chainId,
         bytes6 currencyTicker,
         uint256 usdAmountCents
     );
 
-    function submitProof(IWeb2Json.Proof calldata proof) public {
-        // Could not verify the proof. Likely because of a bad encoding/decoding
-        // if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
+    error InvalidProof();
+    error InvalidDataLength(uint256 length);
 
-        // Decode the packed bytes data
+    function submitProof(IWeb2Json.Proof calldata proof) public {
+        if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
+
+       DTO memory aa = abi.decode(
+            proof.data.responseBody.abiEncodedData,
+            (DTO)
+        );
+
+        emit DataUpdated(
+            aa.recipientId,
+            aa.recipientAccount,
+            aa.paymentStatus,
+            aa.paymentReference
+        );
+
         (
             address ethereumAddress,
             uint256 chainId,
             bytes6 currencyTicker,
             uint256 usdAmountCents
-        ) = decodePackedData(proof.data.responseBody.abiEncodedData);
+        ) = decodePackedData(aa.paymentReference);
 
-        emit DataUpdated(
+        emit DecodedReference(
             ethereumAddress,
             chainId,
             currencyTicker,
@@ -34,14 +71,14 @@ contract PaymentProcessor {
     }
 
     /**
-     * @dev Manually decode packed bytes data into component parts
-     * @param data The packed bytes data to decode
-     * @return ethereumAddress The decoded address (20 bytes)
-     * @return chainId The decoded chain ID (32 bytes as uint256)
-     * @return currencyTicker The decoded currency ticker (6 bytes)
-     * @return usdAmountCents The decoded USD amount in cents (32 bytes as uint256)
-     */
-    function decodePackedData(bytes calldata data) 
+    * @dev Manually decode packed bytes data into component parts
+    * @param data The packed bytes data to decode
+    * @return ethereumAddress The decoded address (20 bytes)
+    * @return chainId The decoded chain ID (32 bytes as uint256)
+    * @return currencyTicker The decoded currency ticker (6 bytes)
+    * @return usdAmountCents The decoded USD amount in cents (32 bytes as uint256)
+    */
+    function decodePackedData(bytes memory data) 
         public 
         pure 
         returns (
@@ -51,16 +88,30 @@ contract PaymentProcessor {
             uint256 usdAmountCents
         ) 
     {
-        // 20 3 6 16 = 45 bytes
-        ethereumAddress = address(bytes20(data[0:20])); // First 20 bytes for address
-
-        chainId = uint256(uint24(bytes3(data[20:23]))); // Next 3 bytes for chain ID
+        if (data.length != 45) revert InvalidDataLength(data.length);
         
-        currencyTicker = bytes6(data[23:29]); // Next 6 bytes for currency ticker
-
-        usdAmountCents = uint256(uint128(bytes16(data[29:45]))); // Last 16 bytes for USD amount in cents
+        // Extract address (20 bytes)
+        bytes20 addressBytes;
+        for (uint256 i = 0; i < 20; i++) {
+            addressBytes |= bytes20(data[i] & 0xFF) >> (i * 8);
+        }
+        ethereumAddress = address(addressBytes);
+        
+        // Extract chain ID (3 bytes -> uint256)
+        chainId = uint256(uint8(data[20])) << 16 | 
+                uint256(uint8(data[21])) << 8 | 
+                uint256(uint8(data[22]));
+        
+        // Extract currency ticker (6 bytes)
+        for (uint256 i = 0; i < 6; i++) {
+            currencyTicker |= bytes6(data[23 + i] & 0xFF) >> (i * 8);
+        }
+        
+        // Extract USD amount (16 bytes -> uint256)
+        for (uint256 i = 0; i < 16; i++) {
+            usdAmountCents |= uint256(uint8(data[29 + i])) << ((15 - i) * 8);
+        }
     }
-
 
     function isWeb2JsonProofValid(
         IWeb2Json.Proof calldata _proof
