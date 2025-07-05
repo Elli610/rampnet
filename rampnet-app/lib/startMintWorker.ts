@@ -39,6 +39,7 @@ async function processJob(job: { transferId: string }) {
   const currency = details.sourceCurrency;
   const memo = details.paymentReference;
 
+  console.log({ amount, currency, memo });
   if (!memo) {
     throw new Error('Missing memo in transfer');
   }
