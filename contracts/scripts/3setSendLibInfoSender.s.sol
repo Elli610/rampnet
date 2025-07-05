@@ -10,7 +10,7 @@ contract SetLibraries is Script {
     function run() external {
         // Load environment variables
         address endpoint = vm.envAddress("FLARE_ENDPOINT_V2"); // LayerZero Endpoint address
-        address oapp = vm.envAddress("OAPP_ADDRESS"); // Your OApp contract address
+        address oapp = vm.envAddress("OAPP_FLARE_ADDRESS"); // Your OApp contract address
         address signer = vm.envAddress("SIGNER"); // Address with permissions to configure
 
         // Library addresses
@@ -18,9 +18,6 @@ contract SetLibraries is Script {
 
         // Chain configurations
         uint32 dstEid = uint32(vm.envUint("HEDERA_LZ_CHAIN_ID")); // Destination chain EID
-        uint32 srcEid = uint32(vm.envUint("FLARE_LZ_CHAIN_ID")); // Source chain EID
-        uint32 gracePeriod = uint32(vm.envUint("GRACE_PERIOD")); // Grace period for library switch
-
         vm.startBroadcast(signer);
 
         // Set send library for outbound messages
@@ -28,14 +25,6 @@ contract SetLibraries is Script {
             oapp, // OApp address
             dstEid, // Destination chain EID
             sendLib // SendUln302 address
-        );
-
-        // Set receive library for inbound messages
-        ILayerZeroEndpointV2(endpoint).setReceiveLibrary(
-            oapp, // OApp address
-            srcEid, // Source chain EID
-            receiveLib, // ReceiveUln302 address
-            gracePeriod // Grace period for library switch
         );
 
         vm.stopBroadcast();
