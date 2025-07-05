@@ -24,11 +24,8 @@
 
 RampNet currently supports the following chains for token delivery and liquidity management:
 
-- Mantle
-- Katana
-- Flow
 - Hedera
-- Zircuit
+- Flare
 - XRPL (XRP Ledger)
 - (soon) All EVM-compatible chains supported by LayerZero OApp and chains supporting fAssets.
 
