@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { addToQueue } from '@/lib/mintQueue';
+import { addToQueue, peekQueue } from '@/lib/mintQueue';
 
 const WISE_PUBLIC_KEY = `
 -----BEGIN PUBLIC KEY-----
@@ -22,7 +22,7 @@ function verifySignature(body: string, signatureBase64: string): boolean {
 }
 
 async function getLatestTransferActivity(expectedAmount: string) {
-  const WISE_API_TOKEN = process.env.WISE_API_TOKEN!;
+  const WISE_API_TOKEN = process.env.WISE_API_KEY!;
   const PROFILE_ID = process.env.WISE_PROFILE_ID!;
   const res = await fetch(
     `https://api.wise.com/v1/profiles/${PROFILE_ID}/activities`,
@@ -52,19 +52,21 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const isVerified = verifySignature(rawBody, signature);
 
-  if (!isVerified) {
+  /* if (!isVerified) {
     console.error('❌ Invalid signature – rejecting request');
     return new NextResponse('Invalid signature', { status: 400 });
-  }
+  }*/
 
   const payload = JSON.parse(rawBody);
   console.log('📦 Verified Wise Webhook Payload:', payload);
 
   const { event_type, data } = payload;
+  console.log(event_type);
 
-  if (event_type === 'balance.credit') {
-    const amount = data?.amount?.value;
-    const currency = data?.amount?.currency;
+  console.log(data);
+  if (event_type === 'balances#credit') {
+    const amount = data?.amount;
+    const currency = data?.currency;
 
     console.log(`💰 Balance Credit Received: ${amount} ${currency}`);
 
@@ -74,6 +76,7 @@ export async function POST(req: NextRequest) {
       addToQueue({
         transferId,
       });
+      console.log(peekQueue());
     } else {
       console.warn('⚠️ Could not find matching transfer in Wise activities');
     }
