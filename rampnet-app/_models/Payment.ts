@@ -7,6 +7,10 @@ export interface IPayment {
   txHash?: string;
   createdAt: Date;
   updatedAt: Date;
+  usdAmount: number;
+  network: string;
+  address: string;
+  currency: string;
 }
 
 const PaymentSchema = new mongoose.Schema<IPayment>(
@@ -19,13 +23,29 @@ const PaymentSchema = new mongoose.Schema<IPayment>(
     },
     paymentStatus: {
       type: String,
-      enum: ['pending', 'processing', 'confirmed', 'failed'],
+      enum: ['pending', 'confirmed', 'failed'], // Fixed: removed 'processing' to match interface
       default: 'pending',
       required: true,
     },
     txHash: {
       type: String,
       default: null,
+    },
+    usdAmount: {
+      type: Number,
+      required: true,
+    },
+    network: {
+      type: String,
+      required: true,
+    },
+    address: {
+      type: String,
+      required: true,
+    },
+    currency: {
+      type: String,
+      required: true,
     },
   },
   {
@@ -37,10 +57,11 @@ const PaymentSchema = new mongoose.Schema<IPayment>(
 PaymentSchema.index({ memo: 1 });
 PaymentSchema.index({ paymentStatus: 1 });
 PaymentSchema.index({ createdAt: 1 });
+PaymentSchema.index({ network: 1 });
+PaymentSchema.index({ address: 1 });
 
 // Prevent recompilation during development
 const Payment =
   mongoose.models.Payment || mongoose.model<IPayment>('Payment', PaymentSchema);
 
 export default Payment;
-

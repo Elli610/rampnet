@@ -26,19 +26,23 @@ export async function POST(req: NextRequest) {
 
     // Connect to database and create payment record
     await connectDB();
-    
+
     // Create new payment with pending status
     const payment = new Payment({
       memo: fullMemo,
       paymentStatus: 'pending',
-      txHash: null
+      txHash: null,
+      usdAmount,
+      address,
+      network,
+      currency,
     });
 
     await payment.save();
     console.log('Payment created in database:', {
       memo: payment.memo,
       status: payment.paymentStatus,
-      createdAt: payment.createdAt
+      createdAt: payment.createdAt,
     });
 
     return new Response(
@@ -59,3 +63,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
