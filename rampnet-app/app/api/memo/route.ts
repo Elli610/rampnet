@@ -1,30 +1,18 @@
 import { NextRequest } from 'next/server';
-import { WisePaymentMemo } from '@/types';
+import { encodePackedBytes, Uint8ArrayToHex } from '@/lib/memo';
 import connectDB from '@/lib/mongodb';
 import Payment from '@/_models/Payment';
-
-function encodeWiseMemo(data: WisePaymentMemo): string {
-  return Buffer.from(JSON.stringify(data)).toString('base64');
-}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     console.log('Received memo request:', body);
     const { usdAmount, address, currency, network } = body;
+    console.log({ usdAmount, address, currency, network });
 
-    const memoPayload: WisePaymentMemo = {
-      usdAmount,
-      address,
-      currency,
-      network,
-      ts: Date.now(),
-    };
-
-    const base64Memo = encodeWiseMemo(memoPayload);
-    const fullMemo = `ONRAMP:${base64Memo}`;
-
-    // Connect to database and create payment record
+    const fullMemo = Uint8ArrayToHex(
+      encodePackedBytes(address.slice(2), network, currency, BigInt(usdAmount))
+    );
     await connectDB();
 
     // Create new payment with pending status
@@ -34,8 +22,8 @@ export async function POST(req: NextRequest) {
       txHash: null,
       usdAmount,
       address,
-      network,
-      currency,
+      chainId: network,
+      currencyTicker: currency,
     });
 
     await payment.save();
@@ -63,4 +51,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

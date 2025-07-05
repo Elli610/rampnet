@@ -8,9 +8,9 @@ export interface IPayment {
   createdAt: Date;
   updatedAt: Date;
   usdAmount: number;
-  network: string;
+  chainId: number;
   address: string;
-  currency: string;
+  currencyTicker: string;
 }
 
 const PaymentSchema = new mongoose.Schema<IPayment>(
@@ -35,15 +35,15 @@ const PaymentSchema = new mongoose.Schema<IPayment>(
       type: Number,
       required: true,
     },
-    network: {
-      type: String,
+    chainId: {
+      type: Number,
       required: true,
     },
     address: {
       type: String,
       required: true,
     },
-    currency: {
+    currencyTicker: {
       type: String,
       required: true,
     },
