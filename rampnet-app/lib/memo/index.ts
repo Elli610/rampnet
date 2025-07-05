@@ -113,3 +113,26 @@ export function Uint8ArrayToHex(uint8Array: Uint8Array): string {
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
 }
+
+export function hexToUint8Array(hexString: string) {
+  // Remove any whitespace and convert to lowercase
+  const cleanHex = hexString.replace(/\s+/g, '').toLowerCase();
+
+  // Check if hex string has even length
+  if (cleanHex.length % 2 !== 0) {
+    throw new Error('Hex string must have even length');
+  }
+
+  // Check if hex string contains only valid hex characters
+  if (!/^[0-9a-f]*$/i.test(cleanHex)) {
+    throw new Error('Invalid hex string');
+  }
+
+  const bytes = new Uint8Array(cleanHex.length / 2);
+
+  for (let i = 0; i < cleanHex.length; i += 2) {
+    bytes[i / 2] = parseInt(cleanHex.substr(i, 2), 16);
+  }
+
+  return bytes;
+}
