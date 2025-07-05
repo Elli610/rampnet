@@ -2,27 +2,36 @@ type MintJob = {
   transferId: string;
 };
 
-const queue: MintJob[] = [];
+class MintQueue {
+  private queue: MintJob[] = [];
+  private isProcessing = false;
 
-let isProcessing = false;
+  add(job: MintJob) {
+    this.queue.push(job);
+    console.log('🧾 Queued job:', job);
+  }
 
-export function addToQueue(job: MintJob) {
-  queue.push(job);
-  console.log(`🧾 Queued job:`, job);
+  peek(): MintJob | null {
+    return this.queue.length > 0 ? this.queue[0] : null;
+  }
+
+  remove() {
+    this.queue.shift();
+  }
+
+  hasJobRunning(): boolean {
+    return this.isProcessing;
+  }
+
+  setJobRunning(running: boolean) {
+    this.isProcessing = running;
+  }
+
+  logState() {
+    console.log('JOBS', this.queue.length > 0 ? this.queue[0] : null);
+  }
 }
 
-export function peekQueue(): MintJob | null {
-  return queue.length > 0 ? queue[0] : null;
-}
+const globalAny = globalThis as any;
 
-export function removeCurrentJob() {
-  queue.shift(); // only call after successful execution
-}
-
-export function hasJobRunning() {
-  return isProcessing;
-}
-
-export function setJobRunning(running: boolean) {
-  isProcessing = running;
-}
+export const mintQueue: MintQueue = (globalAny.mintQueue ||= new MintQueue());

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { addToQueue, peekQueue } from '@/lib/mintQueue';
+import { mintQueue } from '@/lib/mintQueue';
 
 const WISE_PUBLIC_KEY = `
 -----BEGIN PUBLIC KEY-----
@@ -73,10 +73,10 @@ export async function POST(req: NextRequest) {
     const transferId = await getLatestTransferActivity(amount);
 
     if (transferId) {
-      addToQueue({
+      mintQueue.add({
         transferId,
       });
-      console.log(peekQueue());
+      mintQueue.logState();
     } else {
       console.warn('⚠️ Could not find matching transfer in Wise activities');
     }
