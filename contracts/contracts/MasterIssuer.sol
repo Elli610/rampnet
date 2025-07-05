@@ -5,23 +5,30 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 
 contract MasterIssuer {
-    uint256 public totalQueries;
 
-    event DataUpdated(uint256 indexed totalQueries, uint256 response);
+    event DataUpdated(
+        uint256 indexed recipientId,
+        uint256 indexed recipientAccount,
+        string paymentStatus,
+        string paymentReference
+    );
 
     error InvalidProof();
 
     function submitProof(IWeb2Json.Proof calldata proof) public {
         if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
 
-        uint256 response = abi.decode(
+       (string memory paymentStatus, uint256 recipientId,uint256 recipientAccount, string memory paymentReference) = abi.decode(
             proof.data.responseBody.abiEncodedData,
-            (uint256)
+            (string, uint256, uint256, string)
         );
 
-        totalQueries++;
-
-        emit DataUpdated(totalQueries, response);
+        emit DataUpdated(
+            recipientId,
+            recipientAccount,
+            paymentStatus,
+            paymentReference
+        );
     }
 
     function isWeb2JsonProofValid(
