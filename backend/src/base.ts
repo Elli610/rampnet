@@ -10,7 +10,7 @@ import { MasterIssuerAbi } from "./abis/MasterIssuerAbi";
 
 // Coston 2 config
 const NETWORK_NAME = "coston2";
-const provider = new JsonRpcProvider("https://coston2-api.flare.network/ext/C/rpc?x-apikey=");
+const provider = new JsonRpcProvider("https://coston2-api.flare.network/ext/C/rpc");
 const wallet = new Wallet(process.env.PRIVATE_KEY || '', provider);
 const fdcHub = new Contract("0x48aC463d7975828989331F4De43341627b9c5f1D", FdcHubAbi, wallet);
 const fdcRequestFeeConfigurations = new Contract("0x191a1282Ac700edE65c5B0AaF313BAcC3eA7fC7e", IFdcRequestFeeConfigurationsAbi, wallet);
@@ -20,7 +20,7 @@ const fdcVerification = new Contract("0x906507E0B64bcD494Db73bd0459d1C667e14B933
 // Non Flare chain
 const coston2Provider = new JsonRpcProvider("https://coston2-api.flare.network/ext/C/rpc");
 const coston2Wallet = new Wallet(process.env.PRIVATE_KEY || '', coston2Provider);
-export const masterIssuer = new Contract("0x68d4f949952940073E5b75CEEcf340688e3AdE35", MasterIssuerAbi, coston2Wallet);
+export const masterIssuer = new Contract("0x65eb2Fac6387c55C57ED3a398BfA832B11fbF33F", MasterIssuerAbi, coston2Wallet); 
 
 async function prepareAttestationRequestBase(
   url: string,
