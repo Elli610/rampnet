@@ -22,8 +22,8 @@ function encodePackedBytes(
     throw new Error('Chain ID must be between 0 and 16777215 (3 bytes max).');
   }
   
-  if (currencyTicker.length > 6) {
-    throw new Error('Currency ticker must be 6 characters or less.');
+  if (currencyTicker.length > 8) {
+    throw new Error('Currency ticker must be 8 hex characters or less.');
   }
   
   if (usdAmountCents < 0n || usdAmountCents > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {

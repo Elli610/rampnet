@@ -3,16 +3,8 @@ pragma solidity ^0.8.25;
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
-
-// // enum Chains {
-
-// // }
-
-// // enum Tokens {
-// //     USDC,
-// //     USDT,
-// //     FLR
-// // }
+import {TokenSender} from "./TokenSender.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 struct DTO {
     string paymentStatus;
@@ -21,14 +13,16 @@ struct DTO {
     bytes paymentReference;
 }
 
+uint256 constant FLARE_LZ_CHAIN_ID = 30295;
+uint constant HEDERA_LZ_CHAIN_ID = 30316;
+
 contract PaymentProcessor {
-    
-   event DataUpdated(
-        uint256 indexed recipientId,
-        uint256 indexed recipientAccount,
-        string paymentStatus,
-        bytes paymentReference
-    );
+
+    TokenSender public immutable tokenSender;
+
+    // Lz chainId -> currencyId -> token address
+    mapping(uint256 => mapping(bytes6 => address)) public currencies;
+
 
     event DecodedReference(
         address indexed ethereumAddress,
@@ -37,10 +31,56 @@ contract PaymentProcessor {
         uint256 usdAmountCents
     );
 
+    event TokenRegistered(
+        uint256 indexed chainId,
+        bytes6 indexed currencyTicker,
+        address tokenAddress
+    );
+
     error InvalidProof();
     error InvalidDataLength(uint256 length);
 
-    function submitProof(IWeb2Json.Proof calldata proof) public {
+    constructor(TokenSender tokenSender_) {
+        tokenSender = tokenSender_;
+
+        // Register tokens for Flare Mainnet and Hedera Mainnet
+        currencies[FLARE_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: find real token address on flare coston2
+        emit TokenRegistered(
+            30295,
+            bytes6("Fxrp"),
+            address(1)
+        );
+        currencies[FLARE_LZ_CHAIN_ID][bytes6("USDT0")] = address(2); // todo: deploy mock token
+        emit TokenRegistered(
+            30295,
+            bytes6("USDT0"),
+            address(2)
+        );
+
+        // Hedera Mainnet
+        currencies[HEDERA_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: deploy mock token  
+        emit TokenRegistered(
+            30316,
+            bytes6("Fxrp"),
+            address(1)
+        );
+        currencies[HEDERA_LZ_CHAIN_ID][bytes6("USDT0")] = address(2); // todo: deploy mock token 
+        emit TokenRegistered(
+            30316,
+            bytes6("USDT0"),
+            address(2)
+        ); 
+    }
+
+    function submitProof(IWeb2Json.Proof calldata proof) public returns (
+        uint256 recipientId,
+        uint256 recipientAccount,
+        string memory paymentStatus,
+        address  receiverEthereumAddress,
+        uint256 chainId,
+        bytes6 currencyTicker,
+        uint256 usdAmountCents
+    ){
         if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
 
        DTO memory aa = abi.decode(
@@ -48,33 +88,57 @@ contract PaymentProcessor {
             (DTO)
         );
 
-        emit DataUpdated(
-            aa.recipientId,
-            aa.recipientAccount,
-            aa.paymentStatus,
-            aa.paymentReference
-        );
-
         (
-            address ethereumAddress,
-            uint256 chainId,
-            bytes6 currencyTicker,
-            uint256 usdAmountCents
+            receiverEthereumAddress,
+            chainId,
+            currencyTicker,
+            usdAmountCents
         ) = decodePackedData(aa.paymentReference);
 
         emit DecodedReference(
-            ethereumAddress,
+            receiverEthereumAddress,
             chainId,
             currencyTicker,
             usdAmountCents
         );
+
+        recipientId = aa.recipientId;
+        recipientAccount = aa.recipientAccount;
+        paymentStatus = aa.paymentStatus;
+
+        address currency = getCurrencyAddr(
+            chainId,
+            currencyTicker
+        );
+        uint256 price = 0; // todo: get oracle price for the currency BE CAREFUL WITH DECIMALS
+        uint256 amount = price * usdAmountCents;
+
+
+        // Send the payment
+        if (chainId == FLARE_LZ_CHAIN_ID) {
+            amount = price * usdAmountCents;
+
+            IERC20 token = IERC20(currency);
+
+            require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
+
+            token.transfer(receiverEthereumAddress, amount);
+        } else {
+            tokenSender.sendDistribution(
+            uint32(chainId),
+            currency,
+            amount,
+            receiverEthereumAddress,
+            "" // options
+            );
+        }
     }
 
     /**
     * @dev Manually decode packed bytes data into component parts
     * @param data The packed bytes data to decode
     * @return ethereumAddress The decoded address (20 bytes)
-    * @return chainId The decoded chain ID (32 bytes as uint256)
+    * @return chainId The decoded chain ID (4 bytes as uint256)
     * @return currencyTicker The decoded currency ticker (6 bytes)
     * @return usdAmountCents The decoded USD amount in cents (32 bytes as uint256)
     */
@@ -86,9 +150,9 @@ contract PaymentProcessor {
             uint256 chainId,
             bytes6 currencyTicker,
             uint256 usdAmountCents
-        ) 
+        )
     {
-        if (data.length != 45) revert InvalidDataLength(data.length);
+        if (data.length != 46) revert InvalidDataLength(data.length);
         
         // Extract address (20 bytes)
         bytes20 addressBytes;
@@ -97,19 +161,21 @@ contract PaymentProcessor {
         }
         ethereumAddress = address(addressBytes);
         
-        // Extract chain ID (3 bytes -> uint256)
-        chainId = uint256(uint8(data[20])) << 16 | 
-                uint256(uint8(data[21])) << 8 | 
-                uint256(uint8(data[22]));
+        // Extract chain ID (4 bytes -> uint256)
+        chainId = 
+                uint256(uint8(data[20])) << 24 |
+                uint256(uint8(data[21])) << 16 | 
+                uint256(uint8(data[22])) << 8 | 
+                uint256(uint8(data[23]));
         
         // Extract currency ticker (6 bytes)
         for (uint256 i = 0; i < 6; i++) {
-            currencyTicker |= bytes6(data[23 + i] & 0xFF) >> (i * 8);
+            currencyTicker |= bytes6(data[24 + i] & 0xFF) >> (i * 8);
         }
         
         // Extract USD amount (16 bytes -> uint256)
         for (uint256 i = 0; i < 16; i++) {
-            usdAmountCents |= uint256(uint8(data[29 + i])) << ((15 - i) * 8);
+            usdAmountCents |= uint256(uint8(data[30 + i])) << ((15 - i) * 8);
         }
     }
 
@@ -117,5 +183,14 @@ contract PaymentProcessor {
         IWeb2Json.Proof calldata _proof
     ) private view returns (bool) {
         return ContractRegistry.getFdcVerification().verifyJsonApi(_proof);
+    }
+
+    function getCurrencyAddr(
+        uint256 chainId,
+        bytes6 currencyTicker
+    ) private view returns (address token) {
+        token = currencies[chainId][currencyTicker];
+
+        require(token != address(0), "Token not registered for this chainId and currencyTicker");
     }
 }

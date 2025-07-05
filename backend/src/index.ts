@@ -4,7 +4,7 @@ import "dotenv/config";
 
 const { WEB2JSON_VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL, WISE_API_KEY } = process.env;
 
-const paymentId = 1614759566;
+const paymentId = 1615093831;
 
 // Request data
 const apiUrl = `https://wise.com/api/v3/payment/details`;
@@ -50,88 +50,6 @@ async function broadcastProof(proof: any, roundId: number) {
     console.log("Broadcasting proof...\n");
 
     const abiCoder = new AbiCoder();
-
-    const responseType = {
-        components: [
-            {
-                internalType: "bytes32",
-                name: "attestationType",
-                type: "bytes32",
-            },
-            {
-                internalType: "bytes32",
-                name: "sourceId",
-                type: "bytes32",
-            },
-            {
-                internalType: "uint64",
-                name: "votingRound",
-                type: "uint64",
-            },
-            {
-                internalType: "uint64",
-                name: "lowestUsedTimestamp",
-                type: "uint64",
-            },
-            {
-                components: [
-                    {
-                        internalType: "string",
-                        name: "url",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "httpMethod",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "headers",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "queryParams",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "body",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "postProcessJq",
-                        type: "string",
-                    },
-                    {
-                        internalType: "string",
-                        name: "abiSignature",
-                        type: "string",
-                    },
-                ],
-                internalType: "struct IWeb2Json.RequestBody",
-                name: "requestBody",
-                type: "tuple",
-            },
-            {
-                components: [
-                    {
-                        internalType: "bytes",
-                        name: "abiEncodedData",
-                        type: "bytes",
-                    },
-                ],
-                internalType: "struct IWeb2Json.ResponseBody",
-                name: "responseBody",
-                type: "tuple",
-            },
-        ],
-        internalType: "struct IWeb2Json.Response",
-        name: "data",
-        type: "tuple",
-    };
 
     console.log("proof:", proof, "\n");
 

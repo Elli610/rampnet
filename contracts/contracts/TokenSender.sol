@@ -51,7 +51,7 @@ contract TokenSender is OApp, OAppOptionsType3 {
     function setSupportedChain(
         uint32 _eid,
         bool _supported
-    ) external onlyOwner {
+    ) public onlyOwner {
         supportedChains[_eid] = _supported;
         emit ChainSupported(_eid, _supported);
     }
