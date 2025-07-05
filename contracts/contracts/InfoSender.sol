@@ -4,8 +4,11 @@ pragma solidity ^0.8.25;
 import {OApp, Origin, MessagingFee} from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
 import {OAppOptionsType3} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OAppOptionsType3.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+import {AssetManagerSettings} from "@flarenetwork/flare-periphery-contracts/coston2/userInterfaces/data/AssetManagerSettings.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract TokenSender is OApp, OAppOptionsType3 {
+contract TokenSender is OApp, OAppOptionsType3, Ownable {
     /// @notice Struct to hold token distribution data (must match TokenDistributor)
     struct TokenDistributionData {
         address currency; // Token contract address on destination chain
@@ -18,6 +21,9 @@ contract TokenSender is OApp, OAppOptionsType3 {
 
     /// @notice Counter for tracking sent messages
     uint256 public messageCount;
+
+    IAssetManager public immutable assetManager;
+    address public immutable fAssetToken;
 
     /// @notice Mapping to track supported destination chains
     mapping(uint32 => bool) public supportedChains;
@@ -33,13 +39,26 @@ contract TokenSender is OApp, OAppOptionsType3 {
 
     event ChainSupported(uint32 indexed eid, bool supported);
 
-    /// @notice Initialize with Endpoint V2 and owner address
+    event FAssetsRedeemed(
+        address indexed redeemer,
+        uint256 lots,
+        uint256 redeemedAmountUBA
+    );
+
+    /// @notice Initialize with Endpoint V2, owner address, AssetManager and fAssetToken addresses
     /// @param _endpoint The local chain's LayerZero Endpoint V2 address
-    /// @param _owner    The address permitted to configure this OApp
+    /// @param _owner The address permitted to configure this OApp
+    /// @param _assetManager Address of the AssetManager contract
+    /// @param _fAssetToken Address of the fXRP token contract
     constructor(
         address _endpoint,
-        address _owner
-    ) OApp(_endpoint, _owner) Ownable(_owner) {}
+        address _owner,
+        address _assetManager,
+        address _fAssetToken
+    ) OApp(_endpoint, _owner) Ownable(_owner) {
+        assetManager = IAssetManager(_assetManager);
+        fAssetToken = _fAssetToken;
+    }
 
     // ──────────────────────────────────────────────────────────────────────────────
     // ADMIN FUNCTIONS
@@ -108,25 +127,20 @@ contract TokenSender is OApp, OAppOptionsType3 {
         address _recipient,
         bytes calldata _options
     ) external payable {
-        // Validate inputs
         require(supportedChains[_dstEid], "Unsupported destination chain");
         require(_recipient != address(0), "Invalid recipient address");
         require(_amount > 0, "Invalid amount");
 
-        // Create distribution data
         TokenDistributionData memory distributionData = TokenDistributionData({
             currency: _currency,
             amount: _amount,
             recipient: _recipient
         });
 
-        // Encode the message
         bytes memory _message = abi.encode(distributionData);
 
-        // Increment message counter
         messageCount++;
 
-        // Send the cross-chain message
         _lzSend(
             _dstEid,
             _message,
@@ -135,7 +149,6 @@ contract TokenSender is OApp, OAppOptionsType3 {
             payable(msg.sender)
         );
 
-        // Emit event
         emit DistributionSent(
             _dstEid,
             _currency,
@@ -158,7 +171,6 @@ contract TokenSender is OApp, OAppOptionsType3 {
         require(_distributions.length > 0, "Empty distributions array");
         require(_distributions.length <= 50, "Too many distributions"); // Prevent gas issues
 
-        // Validate all distributions
         for (uint256 i = 0; i < _distributions.length; i++) {
             require(
                 _distributions[i].recipient != address(0),
@@ -167,13 +179,10 @@ contract TokenSender is OApp, OAppOptionsType3 {
             require(_distributions[i].amount > 0, "Invalid amount");
         }
 
-        // Encode the message
         bytes memory _message = abi.encode(_distributions);
 
-        // Increment message counter
         messageCount++;
 
-        // Send the cross-chain message
         _lzSend(
             _dstEid,
             _message,
@@ -182,7 +191,6 @@ contract TokenSender is OApp, OAppOptionsType3 {
             payable(msg.sender)
         );
 
-        // Emit events for each distribution
         for (uint256 i = 0; i < _distributions.length; i++) {
             emit DistributionSent(
                 _dstEid,
@@ -194,69 +202,42 @@ contract TokenSender is OApp, OAppOptionsType3 {
         }
     }
 
-    /// @notice Send distribution to multiple chains (same recipient, same token)
-    /// @param _dstEids Array of destination Endpoint IDs
-    /// @param _currency Token contract address (should exist on all destination chains)
-    /// @param _amount Amount to distribute on each chain
-    /// @param _recipient Address to send tokens to (same on all chains)
-    /// @param _options Execution options for gas on the destinations
-    /*    function sendMultiChainDistribution(
-        uint32[] calldata _dstEids,
-        address _currency,
-        uint256 _amount,
-        address _recipient,
-        bytes calldata _options
-    ) external payable {
-        require(_dstEids.length > 0, "Empty chains array");
-        require(_dstEids.length <= 10, "Too many chains"); // Prevent gas issues
-        require(_recipient != address(0), "Invalid recipient address");
-        require(_amount > 0, "Invalid amount");
+    // ──────────────────────────────────────────────────────────────────────────────
+    // FXRP REDEEM FUNCTIONALITY
+    // ──────────────────────────────────────────────────────────────────────────────
 
-        // Calculate total required fee
-        uint256 totalFee = 0;
-        for (uint256 i = 0; i < _dstEids.length; i++) {
-            require(supportedChains[_dstEids[i]], "Unsupported destination chain");
+    /// @notice Redeem fXRP tokens via AssetManager
+    /// @param _lots Number of lots to redeem
+    /// @param _redeemerUnderlyingAddressString Redeemer's underlying address in string form
+    /// @return redeemedAmountUBA Amount of underlying asset redeemed (UBA)
+    function redeemFAssets(
+        uint256 _lots,
+        string calldata _redeemerUnderlyingAddressString
+    ) external returns (uint256) {
+        AssetManagerSettings.Data memory settings = assetManager.getSettings();
+        uint256 amountToRedeem = settings.lotSizeAMG * _lots;
 
-            MessagingFee memory fee = quoteDistribution(_dstEids[i], _currency, _amount, _recipient, _options, false);
-            totalFee += fee.nativeFee;
-        }
+        require(
+            IERC20(fAssetToken).transferFrom(
+                msg.sender,
+                address(this),
+                amountToRedeem
+            ),
+            "Transfer of fXRP failed"
+        );
 
-        require(msg.value >= totalFee, "Insufficient fee");
+        IERC20(fAssetToken).approve(address(assetManager), amountToRedeem);
 
-        // Create distribution data
-        TokenDistributionData memory distributionData = TokenDistributionData({
-            currency: _currency,
-            amount: _amount,
-            recipient: _recipient
-        });
+        uint256 redeemedAmountUBA = assetManager.redeem(
+            _lots,
+            _redeemerUnderlyingAddressString,
+            payable(address(0))
+        );
 
-        bytes memory _message = abi.encode(distributionData);
+        emit FAssetsRedeemed(msg.sender, _lots, redeemedAmountUBA);
 
-        // Send to each chain
-        uint256 remainingValue = msg.value;
-        for (uint256 i = 0; i < _dstEids.length; i++) {
-            messageCount++;
-
-            MessagingFee memory fee = quoteDistribution(_dstEids[i], _currency, _amount, _recipient, _options, false);
-
-            _lzSend(
-                _dstEids[i],
-                _message,
-                combineOptions(_dstEids[i], SEND_DISTRIBUTION, _options),
-                MessagingFee(fee.nativeFee, 0),
-                payable(msg.sender)
-            );
-
-            remainingValue -= fee.nativeFee;
-
-            emit DistributionSent(_dstEids[i], _currency, _amount, _recipient, messageCount);
-        }
-
-        // Refund any excess
-        if (remainingValue > 0) {
-            payable(msg.sender).transfer(remainingValue);
-        }
-    }*/
+        return redeemedAmountUBA;
+    }
 
     // ──────────────────────────────────────────────────────────────────────────────
     // VIEW FUNCTIONS
