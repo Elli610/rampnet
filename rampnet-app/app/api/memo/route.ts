@@ -1,36 +1,15 @@
 import { NextRequest } from 'next/server';
-import { WisePaymentMemo, SupportedNetwork } from '@/types';
+import { WisePaymentMemo } from '@/types';
 
 function encodeWiseMemo(data: WisePaymentMemo): string {
   return Buffer.from(JSON.stringify(data)).toString('base64');
 }
 
-function isValidNetwork(value: string): value is SupportedNetwork {
-  return Object.values(SupportedNetwork).includes(value as SupportedNetwork);
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-
+    console.log('Received memo request:', body);
     const { usdAmount, address, currency, network } = body;
-
-    if (
-      typeof usdAmount !== 'number' ||
-      usdAmount <= 0 ||
-      typeof address !== 'string' ||
-      address.length < 10 ||
-      typeof currency !== 'string' ||
-      !isValidNetwork(network)
-    ) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: 'Invalid input',
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
-      );
-    }
 
     const memoPayload: WisePaymentMemo = {
       usdAmount,
