@@ -5,23 +5,23 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 
 contract MasterIssuer {
-    uint256 public totalFacts;
+    uint256 public totalQueries;
 
-    event LengthUpdated(uint256 indexed factId, uint256 length);
+    event DataUpdated(uint256 indexed totalQueries, string response);
 
     error InvalidProof();
 
     function submitProof(IWeb2Json.Proof calldata proof) public {
         require(isWeb2JsonProofValid(proof), "Invalid Proof");
 
-        uint256 factLength = abi.decode(
+        string memory response = abi.decode(
             proof.data.responseBody.abiEncodedData,
-            (uint256)
+            (string)
         );
 
-        totalFacts++;
+        totalQueries++;
 
-        emit LengthUpdated(totalFacts, factLength);
+        emit DataUpdated(totalQueries, response);
     }
 
     function isWeb2JsonProofValid(

@@ -23,6 +23,5 @@ contract DeployMasterIssuer is Script {
         
         // Log the deployed contract address
         console.log("MasterIssuer deployed to:", address(masterIssuer));
-        console.log("Total facts initialized to:", masterIssuer.totalFacts());
     }
 }
