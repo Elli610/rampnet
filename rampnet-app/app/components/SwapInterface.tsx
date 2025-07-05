@@ -9,7 +9,8 @@ import {
   ChevronDown,
   Loader2,
   Send,
-  CheckCircle
+  CheckCircle,
+  AlertTriangle
 } from 'lucide-react'
 import Image from 'next/image'
 import { SUPPORTED_CHAINS, type Chain, type Token } from '../../config/chains'
@@ -145,20 +146,63 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
     }
   }
 
+  // Validation logic
+  const isValidTransfer = () => {
+    if (!quote || !recipientAddress || isLoadingQuote) return false
+    
+    // Check if output amount is positive
+    if (quote.outputAmount <= 0) return false
+    
+    // Check if input amount is positive
+    if (parseFloat(inputAmount) <= 0) return false
+    
+    return true
+  }
+
+  const getButtonText = () => {
+    if (isLoadingQuote) {
+      return (
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Getting Quote...
+        </div>
+      )
+    }
+    
+    if (!inputAmount || parseFloat(inputAmount) <= 0) {
+      return 'Enter amount'
+    }
+    
+    if (!recipientAddress) {
+      return 'Enter recipient address'
+    }
+    
+    if (quote && quote.outputAmount <= 0) {
+      return 'Amount too low'
+    }
+    
+    return (
+      <div className="flex items-center justify-center gap-2">
+        <Send className="w-5 h-5" />
+        Start Transfer
+      </div>
+    )
+  }
+
   const handleInitiateTransfer = () => {
-    if (!quote || !recipientAddress) return
+    if (!isValidTransfer()) return
     
     console.log('Transfer initiated directly!')
     
     // Préparer les données de transfert
     const transferData: TransferData = {
-      amount: quote.outputAmount,
+      amount: quote!.outputAmount,
       usdAmount: parseFloat(inputAmount),
       recipientAddress,
       selectedChain,
       selectedToken,
-      exchangeRate: quote.exchangeRate,
-      fees: quote.fees
+      exchangeRate: quote!.exchangeRate,
+      fees: quote!.fees
     }
 
     console.log('Transfer data:', transferData)
@@ -230,9 +274,18 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
               value={inputAmount}
               onChange={(e) => setInputAmount(e.target.value)}
               placeholder="0.00"
+              min="0"
+              step="0.01"
               className="flex-1 bg-transparent text-right text-2xl font-bold text-gray-900 outline-none"
             />
           </div>
+          {/* Warning for negative or zero amounts */}
+          {inputAmount && parseFloat(inputAmount) <= 0 && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+              <AlertTriangle className="w-4 h-4" />
+              <span>Amount must be greater than 0</span>
+            </div>
+          )}
         </div>
 
         {/* Swap Arrow */}
@@ -319,7 +372,7 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
                 {isLoadingQuote ? (
                   <Loader2 className="w-6 h-6 animate-spin text-gray-400 ml-auto" />
                 ) : quote ? (
-                  <div className="text-2xl font-bold text-gray-900">
+                  <div className={`text-2xl font-bold ${quote.outputAmount > 0 ? 'text-gray-900' : 'text-red-600'}`}>
                     {quote.outputAmount.toFixed(6)}
                   </div>
                 ) : (
@@ -327,13 +380,21 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
                 )}
               </div>
             </div>
+            
+            {/* Warning for negative output */}
+            {quote && quote.outputAmount <= 0 && (
+              <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
+                <AlertTriangle className="w-4 h-4" />
+                <span>Output amount is too low. Fees exceed input amount.</span>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Quote Details */}
         {quote && (
-          <div className="bg-blue-50 rounded-xl p-4 space-y-3">
-            <div className="flex items-center gap-2 text-blue-800 font-medium">
+          <div className={`rounded-xl p-4 space-y-3 ${quote.outputAmount > 0 ? 'bg-blue-50' : 'bg-red-50'}`}>
+            <div className={`flex items-center gap-2 font-medium ${quote.outputAmount > 0 ? 'text-blue-800' : 'text-red-800'}`}>
               <TrendingUp className="w-4 h-4" />
               Quote Details
             </div>
@@ -354,7 +415,11 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
                 <span>Protocol Fee</span>
                 <span>-${quote.fees.protocolFee.toFixed(2)}</span>
               </div>
-              <div className="border-t border-blue-200 pt-2 flex justify-between font-medium text-blue-800">
+              <div className={`border-t pt-2 flex justify-between font-medium ${
+                quote.outputAmount > 0 
+                  ? 'border-blue-200 text-blue-800' 
+                  : 'border-red-200 text-red-800'
+              }`}>
                 <span>You receive</span>
                 <span>{quote.outputAmount.toFixed(6)} {selectedToken.symbol}</span>
               </div>
@@ -443,20 +508,10 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
         {/* Action Button */}
         <button
           onClick={handleInitiateTransfer}
-          disabled={!quote || !recipientAddress || isLoadingQuote}
+          disabled={!isValidTransfer()}
           className="w-full btn-primary py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isLoadingQuote ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              Getting Quote...
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <Send className="w-5 h-5" />
-              Start Transfer
-            </div>
-          )}
+          {getButtonText()}
         </button>
       </div>
     </div>
