@@ -32,6 +32,7 @@ class MintQueue {
   }
 }
 
+//eslint-disable-next-line @typescript-eslint/no-explicit-any
 const globalAny = globalThis as any;
 
 export const mintQueue: MintQueue = (globalAny.mintQueue ||= new MintQueue());

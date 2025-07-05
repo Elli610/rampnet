@@ -14,6 +14,7 @@ HwIDAQAB
 -----END PUBLIC KEY-----
 `.trim();
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function verifySignature(body: string, signatureBase64: string): boolean {
   const verifier = crypto.createVerify('RSA-SHA256');
   verifier.update(body);
@@ -38,6 +39,7 @@ async function getLatestTransferActivity(expectedAmount: string) {
   const activities = json.activities || [];
 
   const latest = activities.find(
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     (a: any) =>
       a.type === 'TRANSFER' &&
       a.status === 'COMPLETED' &&
@@ -48,9 +50,10 @@ async function getLatestTransferActivity(expectedAmount: string) {
 }
 
 export async function POST(req: NextRequest) {
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const signature = req.headers.get('x-signature-sha256') || '';
   const rawBody = await req.text();
-  const isVerified = verifySignature(rawBody, signature);
+  //const isVerified = verifySignature(rawBody, signature);
 
   /* if (!isVerified) {
     console.error('❌ Invalid signature – rejecting request');
