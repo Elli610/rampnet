@@ -13,8 +13,20 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import { SUPPORTED_CHAINS, type Chain, type Token } from '../../config/chains'
-import { ApiService, type SwapQuote } from '../api/api'
+import { QuoteService } from '../api/flare_ftso'
 import WisePaymentProcessor, { type TransferData } from './WisePaymentProcessor'
+
+interface SwapQuote {
+  inputAmount: number
+  outputAmount: number
+  exchangeRate: number
+  fees: {
+    wiseFee: number
+    networkFee: number
+    protocolFee: number
+  }
+  estimatedTime: string
+}
 
 interface SwapInterfaceProps {
   userWallet?: string
@@ -63,7 +75,7 @@ export default function SwapInterface({ userWallet }: SwapInterfaceProps) {
       const timeoutId = setTimeout(async () => {
         setIsLoadingQuote(true)
         try {
-          const newQuote = await ApiService.getSwapQuote(
+          const newQuote = await QuoteService.getSwapQuote(
             parseFloat(inputAmount),
             selectedToken.symbol,
             selectedChain.id
