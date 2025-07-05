@@ -18,7 +18,7 @@ export interface Chain {
 }
 
 export const SUPPORTED_CHAINS: Chain[] = [
-  {
+  /* {
     id: 'mantle',
     name: 'Mantle',
     symbol: 'MNT',
@@ -53,7 +53,7 @@ export const SUPPORTED_CHAINS: Chain[] = [
         icon: '/usdt0_logo.png',
       },
     ],
-  },
+  },*/
   {
     id: 'hedera',
     name: 'Hedera',
@@ -62,7 +62,7 @@ export const SUPPORTED_CHAINS: Chain[] = [
     rpcUrl: 'https://mainnet-public.mirrornode.hedera.com',
     blockExplorer: 'https://hashscan.io',
     addressType: 'other',
-    chainId: 295,
+    chainId: 30316,
     supportedTokens: [
       {
         symbol: 'USDT0',
@@ -72,7 +72,7 @@ export const SUPPORTED_CHAINS: Chain[] = [
       },
     ],
   },
-  {
+  /* {
     id: 'zircuit',
     name: 'Zircuit',
     symbol: 'ZRC',
@@ -89,7 +89,7 @@ export const SUPPORTED_CHAINS: Chain[] = [
         icon: '/usdt0_logo.png',
       },
     ],
-  },
+  },*/
   {
     id: 'xrpl',
     name: 'XRPL',
