@@ -3,12 +3,13 @@ pragma solidity ^0.8.25;
 
 import {Test, console} from "forge-std/Test.sol";
 import {PaymentProcessor} from "../../contracts/PaymentProcessor.sol";
+import {TokenSender} from "../../contracts/TokenSender.sol";
 
 contract PaymentProcessorTest is Test {
     PaymentProcessor public paymentProcessor;
     
     function setUp() public {
-        paymentProcessor = new PaymentProcessor();
+        paymentProcessor = new PaymentProcessor(TokenSender(address(0)));
     }
     // 20 3 6 16 = 45 bytes
     function testDecodePackedData() public view {
