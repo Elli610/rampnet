@@ -1,40 +1,52 @@
-import type { HardhatUserConfig } from "hardhat/config";
+// Get the environment configuration from .env file
+//
+// To make use of automatic environment setup:
+// - Duplicate .env.example file and name it .env
+// - Fill in the environment variables
+import 'dotenv/config';
 
-import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
-import { configVariable } from "hardhat/config";
+import 'hardhat-deploy';
+import 'hardhat-contract-sizer';
+import '@nomiclabs/hardhat-ethers';
+import '@layerzerolabs/toolbox-hardhat';
+import {
+  HardhatUserConfig,
+  HttpNetworkAccountsUserConfig,
+} from 'hardhat/types';
+
+import { EndpointId } from '@layerzerolabs/lz-definitions';
+
+import './tasks/sendString';
+
+// Set your preferred authentication method
+//
+// If you prefer using a mnemonic, set a MNEMONIC environment variable
+// to a valid mnemonic
+const MNEMONIC = process.env.MNEMONIC;
+
+// If you prefer to be authenticated using a private key, set a PRIVATE_KEY environment variable
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
+
+const accounts: HttpNetworkAccountsUserConfig | undefined = MNEMONIC
+  ? { mnemonic: MNEMONIC }
+  : PRIVATE_KEY
+    ? [PRIVATE_KEY]
+    : undefined;
+
+if (accounts == null) {
+  console.warn(
+    'Could not find MNEMONIC or PRIVATE_KEY environment variables. It will not be possible to execute transactions in your example.'
+  );
+}
 
 const config: HardhatUserConfig = {
-  /*
-   * In Hardhat 3, plugins are defined as part of the Hardhat config instead of
-   * being based on the side-effect of imports.
-   *
-   * Note: A `hardhat-toolbox` like plugin for Hardhat 3 hasn't been defined yet,
-   * so this list is larger than what you would normally have.
-   */
-  plugins: [hardhatToolboxViemPlugin],
+  paths: {
+    cache: 'cache/hardhat',
+  },
   solidity: {
-    /*
-     * Hardhat 3 supports different build profiles, allowing you to configure
-     * different versions of `solc` and its settings for various use cases.
-     *
-     * Note: Using profiles is optional, and any Hardhat 2 `solidity` config
-     * is still valid in Hardhat 3.
-     */
-    profiles: {
-      /*
-       * The default profile is used when no profile is defined or specified
-       * in the CLI or by the tasks you are running.
-       */
-      default: {
-        version: "0.8.28",
-      },
-      /*
-       * The production profile is meant to be used for deployments, providing
-       * more control over settings for production builds and taking some extra
-       * steps to simplify the process of verifying your contracts.
-       */
-      production: {
-        version: "0.8.28",
+    compilers: [
+      {
+        version: '0.8.25',
         settings: {
           optimizer: {
             enabled: true,
@@ -42,41 +54,31 @@ const config: HardhatUserConfig = {
           },
         },
       },
+    ],
+  },
+  networks: {
+    'optimism-testnet': {
+      eid: EndpointId.OPTSEP_V2_TESTNET,
+      url:
+        process.env.RPC_URL_OP_SEPOLIA ||
+        'https://optimism-sepolia.gateway.tenderly.co',
+      accounts,
+    },
+    'arbitrum-testnet': {
+      eid: EndpointId.ARBSEP_V2_TESTNET,
+      url:
+        process.env.RPC_URL_ARB_SEPOLIA ||
+        'https://arbitrum-sepolia.gateway.tenderly.co',
+      accounts,
+    },
+    hardhat: {
+      // Need this for testing because TestHelperOz5.sol is exceeding the compiled contract size limit
+      allowUnlimitedContractSize: true,
     },
   },
-  /*
-   * The `networks` configuration is mostly compatible with Hardhat 2.
-   * The key differences right now are:
-   *
-   * - You must set a `type` for each network, which is either `edr` or `http`,
-   *   allowing you to have multiple simulated networks.
-   *
-   * - You can set a `chainType` for each network, which is either `generic`,
-   *   `l1`, or `optimism`. This has two uses. It ensures that you always
-   *   connect to the network with the right Chain Type. And, on `edr`
-   *   networks, it makes sure that the simulated chain behaves exactly like the
-   *   real one. More information about this can be found in the test files.
-   *
-   * - The `accounts` field of `http` networks can also receive Configuration
-   *   Variables, which are values that only get loaded when needed. This allows
-   *   Hardhat to still run despite some of its config not being available
-   *   (e.g., a missing private key or API key). More info about this can be
-   *   found in the "Sending a Transaction to Optimism Sepolia" of the README.
-   */
-  networks: {
-    hardhatMainnet: {
-      type: "edr",
-      chainType: "l1",
-    },
-    hardhatOp: {
-      type: "edr",
-      chainType: "optimism",
-    },
-    sepolia: {
-      type: "http",
-      chainType: "l1",
-      url: configVariable("SEPOLIA_RPC_URL"),
-      accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
+  namedAccounts: {
+    deployer: {
+      default: 0, // wallet address of index[0], of the mnemonic in .env
     },
   },
 };
