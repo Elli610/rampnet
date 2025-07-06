@@ -209,6 +209,7 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
+  console.log('decodePackedBytes called with data length:', packedData.length, packedData);
   if (packedData.length !== 46) {
     throw new Error('Invalid packed data length. Expected 46 bytes.');
   }
