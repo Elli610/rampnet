@@ -30,12 +30,12 @@ function encodePackedBytes(
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
-  // Calculate total size: 20 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
-  const buffer = new Uint8Array(46);
+  // Calculate total size: 33 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
+  const buffer = new Uint8Array(59);
   let offset = 0;
   
-  // 1. Ethereum address (20 bytes)
-  for (let i = 0; i < 20; i++) {
+  // 1. Ethereum address (33 bytes)
+  for (let i = 0; i < 33; i++) {
     buffer[offset++] = parseInt(address.substr(i * 2, 2), 16);
   }
   
@@ -69,7 +69,7 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
-  if (packedData.length !== 45) {
+  if (packedData.length !== 59) {
     throw new Error('Invalid packed data length. Expected 45 bytes.');
   }
   
@@ -77,12 +77,13 @@ function decodePackedBytes(packedData: Uint8Array): {
   
   // 1. Ethereum address (20 bytes)
   let address = '';
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 33; i++) {
     address += packedData[offset++].toString(16).padStart(2, '0');
   }
   
-  // 2. Chain ID (3 bytes, big-endian)
-  const chainId = (packedData[offset++] << 16) | 
+  // 2. Chain ID (4 bytes, big-endian)
+  const chainId =   (packedData[offset++] << 24) | 
+              (packedData[offset++] << 16) | 
                   (packedData[offset++] << 8) | 
                   packedData[offset++];
   

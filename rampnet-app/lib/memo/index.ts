@@ -2,9 +2,9 @@
  * Encodes ethereum transaction data into packed bytes
  * 
  * @param address - Ethereum address without 0x prefix (40 hex chars)
- * @param chainId - Chain ID (will be packed into 4 bytes)
+ * @param chainId - Chain ID (will be packed into 3 bytes)
  * @param currencyTicker - Currency ticker (max 6 chars, will be padded with nulls)
- * @param usdAmountCents - USD amount (will be converted to cents by multiplying by 100)
+ * @param usdAmountCents - USD amount in cents (uint128)
  * @returns Uint8Array containing the packed data
  */
 function encodePackedBytes(
@@ -18,27 +18,24 @@ function encodePackedBytes(
     throw new Error('Invalid Ethereum address format. Must be 40 hex characters without 0x prefix.');
   }
   
-  if (chainId < 0 || chainId > 0xFFFFFFFF) {
-    throw new Error('Chain ID must be between 0 and 4294967295 (4 bytes max).');
+  if (chainId < 0 || chainId > 0xFFFFFF) {
+    throw new Error('Chain ID must be between 0 and 16777215 (3 bytes max).');
   }
   
   if (currencyTicker.length > 6) {
     throw new Error('Currency ticker must be 6 hex characters or less.');
   }
   
-  // Convert USD amount to cents: multiply by 100 and remove decimals
-  const convertedAmount = BigInt(Math.floor(Number(usdAmountCents) * 100));
-  
-  if (convertedAmount < 0n || convertedAmount > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
+  if (usdAmountCents < 0n || usdAmountCents > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
-  // Calculate total size: 20 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 46 bytes
-  const buffer = new Uint8Array(46);
+  // Calculate total size: 33 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
+  const buffer = new Uint8Array(59);
   let offset = 0;
   
-  // 1. Ethereum address (20 bytes)
-  for (let i = 0; i < 20; i++) {
+  // 1. Ethereum address (33 bytes)
+  for (let i = 0; i < 33; i++) {
     buffer[offset++] = parseInt(address.substr(i * 2, 2), 16);
   }
   
@@ -56,7 +53,7 @@ function encodePackedBytes(
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
   for (let i = 15; i >= 0; i--) {
-    buffer[offset++] = Number((convertedAmount >> BigInt(i * 8)) & 0xFFn);
+    buffer[offset++] = Number((usdAmountCents >> BigInt(i * 8)) & 0xFFn);
   }
   
   return buffer;
@@ -72,21 +69,21 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
-  if (packedData.length !== 46) {
-    throw new Error('Invalid packed data length. Expected 46 bytes.');
+  if (packedData.length !== 59) {
+    throw new Error('Invalid packed data length. Expected 45 bytes.');
   }
   
   let offset = 0;
   
   // 1. Ethereum address (20 bytes)
   let address = '';
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 33; i++) {
     address += packedData[offset++].toString(16).padStart(2, '0');
   }
   
   // 2. Chain ID (4 bytes, big-endian)
-  const chainId = (packedData[offset++] << 24) | 
-                  (packedData[offset++] << 16) | 
+  const chainId =   (packedData[offset++] << 24) | 
+              (packedData[offset++] << 16) | 
                   (packedData[offset++] << 8) | 
                   packedData[offset++];
   
@@ -101,13 +98,10 @@ function decodePackedBytes(packedData: Uint8Array): {
   const currencyTicker = new TextDecoder().decode(tickerBytes.slice(0, tickerLength));
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
-  let rawUsdAmountCents = 0n;
+  let usdAmountCents = 0n;
   for (let i = 0; i < 16; i++) {
-    rawUsdAmountCents = (rawUsdAmountCents << 8n) | BigInt(packedData[offset++]);
+    usdAmountCents = (usdAmountCents << 8n) | BigInt(packedData[offset++]);
   }
-  
-  // La valeur est déjà en cents depuis l'encodage, pas besoin de reconvertir
-  const usdAmountCents = rawUsdAmountCents;
   
   return {
     address,
@@ -117,33 +111,28 @@ function decodePackedBytes(packedData: Uint8Array): {
   };
 }
 
+// Example usage and testing
+function example() {
+  try {
+    const packedData = encodePackedBytes(
+      "742d35Cc6634C0532925a3b8D400aA888E86D14b", // Ethereum address
+      1,                                            // Mainnet chain ID
+      "USDC",                                       // Currency ticker
+      123456789n                                    // $1,234,567.89 in cents
+    );
+    
+    console.log('Packed data length:', packedData.length);
+    console.log('Packed data (hex):', Array.from(packedData).map(b => b.toString(16).padStart(2, '0')).join(''));
+    
+    // Verify by decoding
+    const decoded = decodePackedBytes(packedData);
+    console.log('Decoded:', decoded);
+    
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+// example();
+
 export { encodePackedBytes, decodePackedBytes };
-
-export function Uint8ArrayToHex(uint8Array: Uint8Array): string {
-  return Array.from(uint8Array)
-    .map((byte) => byte.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-export function hexToUint8Array(hexString: string) {
-  // Remove any whitespace and convert to lowercase
-  const cleanHex = hexString.replace(/\s+/g, '').toLowerCase();
-
-  // Check if hex string has even length
-  if (cleanHex.length % 2 !== 0) {
-    throw new Error('Hex string must have even length');
-  }
-
-  // Check if hex string contains only valid hex characters
-  if (!/^[0-9a-f]*$/i.test(cleanHex)) {
-    throw new Error('Invalid hex string');
-  }
-
-  const bytes = new Uint8Array(cleanHex.length / 2);
-
-  for (let i = 0; i < cleanHex.length; i += 2) {
-    bytes[i / 2] = parseInt(cleanHex.substr(i, 2), 16);
-  }
-
-  return bytes;
-}

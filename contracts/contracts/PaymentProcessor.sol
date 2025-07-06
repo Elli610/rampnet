@@ -44,7 +44,7 @@ contract PaymentProcessor {
     mapping(bytes6 => bytes21) public feedId;
 
     event DecodedReference(
-        address indexed ethereumAddress,
+        bytes receiverAddress, // up to 33 bytes for xrp addresses
         uint256 chainId,
         bytes6 currencyTicker,
         uint256 usdAmountCents
@@ -102,7 +102,7 @@ contract PaymentProcessor {
         uint256 recipientId,
         uint256 recipientAccount,
         string memory paymentStatus,
-        address receiverEthereumAddress,
+        bytes memory receiverEthereumAddress,
         uint256 chainId,
         bytes6 currencyTicker,
         uint256 usdAmountCents
@@ -152,7 +152,7 @@ contract PaymentProcessor {
 
             require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
             
-            token.transfer(receiverEthereumAddress, amount);
+            token.transfer(address(bytes20(receiverEthereumAddress)), amount);
         } else if (chainId == XRPL_TESTNET_CHAIN_ID) {
             uint256 lot_size = 10;
 
@@ -184,7 +184,7 @@ contract PaymentProcessor {
             uint32(chainId),
             currency,
             amount,
-            receiverEthereumAddress,
+            address(bytes20(receiverEthereumAddress)),
             "" // options
             );
         }
@@ -202,7 +202,7 @@ contract PaymentProcessor {
         public 
         pure 
         returns (
-            address ethereumAddress,
+            bytes memory ethereumAddress,
             uint256 chainId,
             bytes6 currencyTicker,
             uint256 usdAmountCents
@@ -210,12 +210,12 @@ contract PaymentProcessor {
     {
         if (data.length != 46) revert InvalidDataLength(data.length);
         
-        // Extract address (20 bytes)
-        bytes20 addressBytes;
+        // Extract address (up to 33 bytes)
+        bytes20 tempAddress;
         for (uint256 i = 0; i < 20; i++) {
-            addressBytes |= bytes20(data[i] & 0xFF) >> (i * 8);
+            tempAddress |= bytes20(uint160(uint8(data[i]))) >> (i * 8);
         }
-        ethereumAddress = address(addressBytes);
+        ethereumAddress = abi.encodePacked(tempAddress);
         
         // Extract chain ID (4 bytes -> uint256)
         chainId = 
