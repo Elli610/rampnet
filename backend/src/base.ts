@@ -20,7 +20,7 @@ const fdcVerification = new Contract("0x906507E0B64bcD494Db73bd0459d1C667e14B933
 // Non Flare chain
 const coston2Provider = new JsonRpcProvider("https://coston2-api.flare.network/ext/C/rpc");
 const coston2Wallet = new Wallet(process.env.PRIVATE_KEY || '', coston2Provider);
-export const masterIssuer = new Contract("0xE17016294876127065ebDdb1f03971b42c250C89", MasterIssuerAbi, coston2Wallet); 
+export const masterIssuer = new Contract("0x5cB67957194e97Da2EBf0fCAF66b33c7cA96bA61", MasterIssuerAbi, coston2Wallet); 
 
 async function prepareAttestationRequestBase(
   url: string,

@@ -25,8 +25,8 @@ uint256 constant FLARE_MAINNET_CHAIN_ID = 14;
 // Arbitrary chain Id set for xrpl testnet end receiver
 uint256 constant XRPL_TESTNET_CHAIN_ID = 100;
 // Layer0 offchain chain Ids for flare and hedera mainnets
-uint256 constant FLARE_LZ_CHAIN_ID = 30295;
-uint256 constant HEDERA_LZ_CHAIN_ID = 30316;
+uint256 constant FLARE_LZ_CHAIN_ID = 30316; // real: 30295
+uint256 constant HEDERA_LZ_CHAIN_ID = 30295; // real: 30316
 
 // Fxrp token address on Coston2 (token not available on flare mainnet)
 address constant FXRP_COSTON2_ADDRESS = address(0x8b4abA9C4BD7DD961659b02129beE20c6286e17F); 
