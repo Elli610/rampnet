@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
+import {console} from "forge-std/console.sol";
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
@@ -7,6 +8,11 @@ import {TokenSender} from "./TokenSender.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockErc20} from "./MockErc20.sol";
 import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
+
+import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+import {IFeeCalculator} from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
+
 
 struct DTO {
     string paymentStatus;
@@ -34,6 +40,8 @@ contract PaymentProcessor {
 
     // Lz chainId -> currencyId -> token address
     mapping(uint256 => mapping(bytes6 => address)) public currencies;
+    // currencyId -> flare feedId
+    mapping(bytes6 => bytes21) public feedId;
 
     event DecodedReference(
         address indexed ethereumAddress,
@@ -85,6 +93,9 @@ contract PaymentProcessor {
             bytes6("USDT0"),
             address(2)
         ); 
+
+        feedId[bytes6("Fxrp")] = bytes21(0x015852502f55534400000000000000000000000000); // XRP/USD feed
+        feedId[bytes6("USDT0")] = bytes21(0x01555344542f555344000000000000000000000000); // USDT/USD feed (USDT0 feed not available)
     }
 
     function submitProof(IWeb2Json.Proof calldata proof) public returns (
@@ -130,8 +141,9 @@ contract PaymentProcessor {
             currencyTicker
         );
 
-        uint256 price = 0; // todo: get oracle price for the currency BE CAREFUL WITH DECIMALS
-        uint256 amount = price * usdAmountCents + 1;
+        (uint256 price, int8 decimals) = usdPriceForAsset(currencyTicker);
+
+        uint256 amount = decimals >= 0 ? (usdAmountCents * 10**uint256(uint8(decimals)) * 10**uint256(uint8(decimals)) ) / (price * 100) : (usdAmountCents * price) / (10**uint256(uint8(decimals))*10**uint256(uint8(decimals)) * 100); // Math.muldiv
 
         // Send the payment
         if (chainId == FLARE_LZ_CHAIN_ID) {
@@ -146,11 +158,6 @@ contract PaymentProcessor {
 
             require(amount % lot_size == 0, "Amount must be a multiple of lot size");
             // Bridge to XRPL Testnet
-    //           function redeem(
-    //     uint256 _lots,
-    //     string memory _redeemerUnderlyingAddressString,
-    //     address payable _executor
-    // ) external payable returns (uint256 _redeemedAmountUBA);
 
             // allow the assetManager to transfer the token
             IERC20 token = IERC20(currency);
@@ -159,12 +166,13 @@ contract PaymentProcessor {
             // Increase allowance
             token.approve(address(ASSET_MANAGER), amount);
 
-            // Redeem the token on XRPL Testnet
-            ASSET_MANAGER.redeem(
-                amount / lot_size, // Convert to lots
-                bytesToXrplAddress(receiverEthereumAddress), // Convert address to XRPL format
-                payable(receiverEthereumAddress)
-            );
+            // // Redeem the token on XRPL Testnet
+            // ASSET_MANAGER.redeem(
+            //     amount / lot_size, // Convert to lots
+            //     bytesToXrplAddress(receiverEthereumAddress), // Convert address to XRPL format
+            //     payable(receiverEthereumAddress)
+            // );
+            revert("todo"); // todo: convert bytes to XRPL address and call redeem function (first get 33 bytes addresses)
 
         } else{
             // Pass through Layer0
@@ -242,14 +250,24 @@ contract PaymentProcessor {
         require(token != address(0), "Token not registered for this chainId and currencyTicker");
     }
 
-    function bytesToXrplAddress(
-        address addr
-    ) private pure returns (string memory) {
-        // Convert Ethereum address to XRPL address format
-        bytes memory xrplAddress = new bytes(20);
-        for (uint256 i = 0; i < 20; i++) {
-            xrplAddress[i] = bytes1(uint8(uint160(addr) >> (8 * (19 - i))));
-        }
-        return ""; // xrplAddress;
+    function usdPriceForAsset(bytes6 asset) 
+        private 
+        view 
+        returns (uint256 price, int8 decimals)
+    {
+        bytes21 feed = feedId[asset];
+        require(feed != bytes21(0), "Feed not registered for this asset");
+
+        // Get the price from the Flare Oracle
+        /* THIS IS A TEST METHOD, in production use: ftsoV2 = ContractRegistry.getFtsoV2(); */
+        TestFtsoV2Interface ftsoV2 = ContractRegistry.getTestFtsoV2();
+
+        (price, decimals, /** todo: check if timestamp is not too far in the past */) =  ftsoV2.getFeedById(feed);
+    }
+
+    function debugUsdPriceForAsset(
+        bytes6 asset
+    ) public view returns (uint256 price, int8 decimals) {
+        return usdPriceForAsset(asset);
     }
 }

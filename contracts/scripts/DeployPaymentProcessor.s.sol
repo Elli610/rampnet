@@ -32,7 +32,16 @@ contract DeployPaymentProcessor is Script {
         
         // Deploy the contract
         PaymentProcessor paymentProcessor = new PaymentProcessor(TokenSender(address(0)));
-        
+
+        // (uint256 price, int8 decimals) = paymentProcessor.debugUsdPriceForAsset(bytes6("USDT0"));
+
+        // console.log("xrp/usd price: ", price);
+        // console.log("xrp/usd decimals: ", decimals);
+
+        // uint256 usdAmountCents = 100 * 10; // 10 USD in cents
+
+        // uint256 amount = decimals >= 0 ? (usdAmountCents * 10**uint256(uint8(decimals)) * 10**uint256(uint8(decimals)) ) / (price * 100) : (usdAmountCents * price) / (10**uint256(uint8(decimals))*10**uint256(uint8(decimals)) * 100); // Math.muldiv
+        // console.log("amount: ", amount);
         // Stop broadcasting
         vm.stopBroadcast();
         
