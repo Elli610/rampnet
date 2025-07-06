@@ -69,7 +69,7 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
-  if (packedData.length !== 59) {
+  if (packedData.length !== 45) {
     throw new Error('Invalid packed data length. Expected 45 bytes.');
   }
   
