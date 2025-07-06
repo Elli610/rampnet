@@ -202,7 +202,7 @@ async function broadcastProof(
   
   const coston2Provider = new JsonRpcProvider(isFlareMainnet ? "https://rpc.ankr.com/flare":"https://coston2-api.flare.network/ext/C/rpc");
   const coston2Wallet = new Wallet(process.env.PRIVATE_KEY || '', coston2Provider);
-  const masterIssuer = new Contract(isFlareMainnet ? "0x0a40C5c9f17Fc9fcc82C13f3cb0691F784156881" : "0xB9C02e12eC682316484b458A053B38447774fAD5", MasterIssuerAbi, coston2Wallet); 
+  const masterIssuer = new Contract(isFlareMainnet ? "0xd8E10345E267Be6ea14BC244e68Ea4E24f574063" : "0xB9C02e12eC682316484b458A053B38447774fAD5", MasterIssuerAbi, coston2Wallet); 
 
   const tx = await masterIssuer.submitProof(evmProof);
   const result = await tx.wait();

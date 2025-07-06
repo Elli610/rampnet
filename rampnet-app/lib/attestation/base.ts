@@ -6,7 +6,6 @@ import { IRelayAbi } from "./abis/IRelay";
 import { IFdcVerificationAbi } from "./abis/IFdcVerification";
 import { sleep, toUtf8HexString } from "./utils";
 import "dotenv/config";
-import { MasterIssuerAbi } from "./abis/MasterIssuerAbi";
 
 // Type definitions
 interface AttestationRequest {
