@@ -36,8 +36,20 @@ async function processJob(job: { transferId: string }) {
   }
 
   const decoded = decodePackedBytes(hexToUint8Array(memo));
+  
+  // Vérifier si le payment existe avant de le mettre à jour
   const payment = await Payment.findOne({ memo });
-  await payment.update({ paymentStatus: 'processing' });
+  if (!payment) {
+    throw new Error(`Payment not found for memo: ${memo}`);
+  }
+
+  // Vérifier si le status peut être mis à jour vers 'processing'
+  if (!['pending', 'confirmed', 'failed'].includes('processing')) {
+    // Le status 'processing' n'existe pas dans ton enum, utilise 'confirmed'
+    await payment.updateOne({ paymentStatus: 'confirmed' });
+  } else {
+    await payment.updateOne({ paymentStatus: 'processing' });
+  }
 
   console.log('✅ Transfer Info:');
   console.log('Amount:', amount);
@@ -51,11 +63,12 @@ async function processJob(job: { transferId: string }) {
     console.log('✅ Wise payment attestation completed successfully');
     
     // Update payment status to completed after successful attestation
-    await payment.update({ paymentStatus: 'completed' });
+    // Note: 'completed' n'existe pas dans ton enum, utilise 'confirmed'
+    await payment.updateOne({ paymentStatus: 'confirmed' });
     
   } catch (error) {
     console.error('❌ Wise payment attestation failed:', error);
-    await payment.update({ paymentStatus: 'failed' });
+    await payment.updateOne({ paymentStatus: 'failed' });
     throw error; // Re-throw to trigger job failure handling
   }
 
