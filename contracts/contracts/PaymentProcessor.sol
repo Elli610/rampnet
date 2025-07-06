@@ -6,6 +6,7 @@ import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Js
 import {TokenSender} from "./TokenSender.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockErc20} from "./MockErc20.sol";
+import {IAssetManager} from "@flarenetwork/flare-periphery-contracts/coston2/IAssetManager.sol";
 
 struct DTO {
     string paymentStatus;
@@ -15,8 +16,15 @@ struct DTO {
 }
 
 uint256 constant FLARE_MAINNET_CHAIN_ID = 14;
+// Arbitrary chain Id set for xrpl testnet end receiver
+uint256 constant XRPL_TESTNET_CHAIN_ID = 100;
+// Layer0 offchain chain Ids for flare and hedera mainnets
 uint256 constant FLARE_LZ_CHAIN_ID = 30295;
-uint constant HEDERA_LZ_CHAIN_ID = 30316;
+uint256 constant HEDERA_LZ_CHAIN_ID = 30316;
+
+// Fxrp token address on Coston2 (token not available on flare mainnet)
+address constant FXRP_COSTON2_ADDRESS = address(0x8b4abA9C4BD7DD961659b02129beE20c6286e17F); 
+IAssetManager constant ASSET_MANAGER = IAssetManager(0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5);
 
 // Contract supposed to be deployed on Flare Coston2 testnet or Flare Mainnet (with proof verification disabled)
 contract PaymentProcessor {
@@ -45,10 +53,11 @@ contract PaymentProcessor {
 
     constructor(TokenSender tokenSender_) {
         tokenSender = tokenSender_;
+        // For demo purposes, we use a mocked USDT0 token
         USDT0_FLARE = new MockErc20("USDT0", "USDT0");
 
         // Register tokens for Flare Mainnet and Hedera Mainnet
-        currencies[FLARE_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: find real token address on flare coston2
+        currencies[FLARE_LZ_CHAIN_ID][bytes6("Fxrp")] = address(FXRP_COSTON2_ADDRESS);
         emit TokenRegistered(
             FLARE_LZ_CHAIN_ID,
             bytes6("Fxrp"),
@@ -123,6 +132,7 @@ contract PaymentProcessor {
 
         uint256 price = 0; // todo: get oracle price for the currency BE CAREFUL WITH DECIMALS
         uint256 amount = price * usdAmountCents + 1;
+
         // Send the payment
         if (chainId == FLARE_LZ_CHAIN_ID) {
 
@@ -131,8 +141,33 @@ contract PaymentProcessor {
             require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
             
             token.transfer(receiverEthereumAddress, amount);
+        } else if (chainId == XRPL_TESTNET_CHAIN_ID) {
+            uint256 lot_size = 10;
+
+            require(amount % lot_size == 0, "Amount must be a multiple of lot size");
+            // Bridge to XRPL Testnet
+    //           function redeem(
+    //     uint256 _lots,
+    //     string memory _redeemerUnderlyingAddressString,
+    //     address payable _executor
+    // ) external payable returns (uint256 _redeemedAmountUBA);
+
+            // allow the assetManager to transfer the token
+            IERC20 token = IERC20(currency);
+            require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
+
+            // Increase allowance
+            token.approve(address(ASSET_MANAGER), amount);
+
+            // Redeem the token on XRPL Testnet
+            ASSET_MANAGER.redeem(
+                amount / lot_size, // Convert to lots
+                bytesToXrplAddress(receiverEthereumAddress), // Convert address to XRPL format
+                payable(receiverEthereumAddress)
+            );
+
         } else{
-            
+            // Pass through Layer0
             if (chainId != FLARE_MAINNET_CHAIN_ID) {
                 revert("Cannot trigger Layer0 from Coston2 testnet");
             }
@@ -205,5 +240,16 @@ contract PaymentProcessor {
         token = currencies[chainId][currencyTicker];
 
         require(token != address(0), "Token not registered for this chainId and currencyTicker");
+    }
+
+    function bytesToXrplAddress(
+        address addr
+    ) private pure returns (string memory) {
+        // Convert Ethereum address to XRPL address format
+        bytes memory xrplAddress = new bytes(20);
+        for (uint256 i = 0; i < 20; i++) {
+            xrplAddress[i] = bytes1(uint8(uint160(addr) >> (8 * (19 - i))));
+        }
+        return ""; // xrplAddress;
     }
 }

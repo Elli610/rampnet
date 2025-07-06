@@ -8,56 +8,91 @@ import {TokenSender} from "../../contracts/TokenSender.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 
 contract PaymentProcessorProofTest is Test {
-    PaymentProcessor public paymentProcessor;
-
-    function setUp() public {
-        paymentProcessor = new PaymentProcessor(TokenSender(address(0)));
+    
+    // Base58 alphabet used by XRPL
+    string constant ALPHABET = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+    
+    function bytesToXrplAddress(bytes20 addr) private pure returns (string memory) {
+        // Create payload: 0x00 + 20 bytes + 4 byte checksum
+        bytes memory payload = new bytes(25);
+        
+        // Add version byte (0x00 for XRPL addresses)
+        payload[0] = 0x00;
+        
+        // Add the 20-byte address
+        for (uint i = 0; i < 20; i++) {
+            payload[i + 1] = addr[i];
+        }
+        
+        // Calculate double SHA256 checksum
+        bytes memory slice = new bytes(21);
+        for (uint i = 0; i < 21; i++) {
+            slice[i] = payload[i];
+        }
+        bytes32 hash1 = sha256(abi.encodePacked(slice));
+        bytes32 hash2 = sha256(abi.encodePacked(hash1));
+        
+        // Add first 4 bytes of checksum
+        for (uint i = 0; i < 4; i++) {
+            payload[21 + i] = hash2[i];
+        }
+        
+        // Convert to base58
+        return base58Encode(payload);
+    }
+    
+    function base58Encode(bytes memory data) private pure returns (string memory) {
+        if (data.length == 0) return "";
+        
+        // Calculate the number of leading zeros
+        uint leadingZeros = 0;
+        for (uint i = 0; i < data.length && data[i] == 0; i++) {
+            leadingZeros++;
+        }
+        
+        // Convert to big integer representation
+        uint[] memory digits = new uint[](data.length * 138 / 100 + 1);
+        uint digitsLength = 1;
+        
+        for (uint i = 0; i < data.length; i++) {
+            uint carry = uint(uint8(data[i]));
+            for (uint j = 0; j < digitsLength; j++) {
+                carry += digits[j] * 256;
+                digits[j] = carry % 58;
+                carry /= 58;
+            }
+            while (carry > 0) {
+                digits[digitsLength] = carry % 58;
+                digitsLength++;
+                carry /= 58;
+            }
+        }
+        
+        // Convert to base58 string
+        bytes memory result = new bytes(leadingZeros + digitsLength);
+        
+        // Add leading zeros as 'r' characters
+        for (uint i = 0; i < leadingZeros; i++) {
+            result[i] = bytes(ALPHABET)[0];
+        }
+        
+        // Add base58 digits (in reverse order)
+        for (uint i = 0; i < digitsLength; i++) {
+            result[leadingZeros + i] = bytes(ALPHABET)[digits[digitsLength - 1 - i]];
+        }
+        
+        return string(result);
+    }
+    
+    // Public function for testing
+    function convertAddress(bytes20 addr) public pure returns (string memory) {
+        return bytesToXrplAddress(addr);
     }
 
-    function testProofSubmission() public {
-        // Define the Proof struct components
-        bytes32[] memory merkleProof = new bytes32[](4);
-        merkleProof[0] = 0xeb3408088fdfad8402b1eeeea3e86b39bccf253a6b2eac5b213d602e183ff618;
-        merkleProof[1] = 0x0da834f77c52d23e77c8ad13fe10558a4f292d73c101c947585435e73deb57c6;
-        merkleProof[2] = 0x196873c37822e917d16f732bca4e27f95942ba1aa0fd81b1f78b3e5c6d2622de;
-        merkleProof[3] = 0xdc4e1d3f377ffdc3e9c4cb1d47837336d88523a750201553b2c6d360c26e057b;
 
-        // Define the RequestBody struct
-        IWeb2Json.RequestBody memory requestBody = IWeb2Json.RequestBody({
-            url: "https://wise.com/api/v3/payment/details",
-            httpMethod: "GET",
-            headers: "{\"Authorization\": \"Bearer 78addb7a-7988-4bab-bce2-26334d6838d5\"}",
-            queryParams: "{\"paymentId\":1615160706, \"simplifiedResult\":0}",
-            body: "",
-            postProcessJq: "{paymentStatus: .paymentStatus, recipientId: (.recipient.id | tonumber), recipientAccount: (.recipient.account | split(\"(\")[1] | split(\")\")[0] | tonumber), paymentReference: (\"0x\" + .paymentReference) }",
-            abiSignature: "{\"components\": [{\"internalType\": \"string\", \"name\": \"paymentStatus\", \"type\": \"string\"},{\"internalType\": \"uint256\", \"name\": \"recipientId\", \"type\": \"uint256\"},{\"internalType\": \"uint256\", \"name\": \"recipientAccount\", \"type\": \"uint256\"},{\"internalType\": \"bytes\", \"name\": \"paymentReference\", \"type\": \"bytes\"}],\"name\": \"task\",\"type\": \"tuple\"}"
-        });
+    // function testJsp() public {
 
-        // Define the ResponseBody struct
-        IWeb2Json.ResponseBody memory responseBody = IWeb2Json.ResponseBody({
-            abiEncodedData: hex"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000003fcc77ed000000000000000000000000000000000000000000000000000000000451f3fe00000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000b7472616e73666572726564000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002ebc10ea9f1d53c273d7fd25d39394b8b2eb761d2a0000766c5553445430000000000000000000000000000000000a000000000000000000000000000000000000"
-        });
-
-        // Define the Response struct
-        IWeb2Json.Response memory response = IWeb2Json.Response({
-            attestationType: 0x576562324a736f6e000000000000000000000000000000000000000000000000,
-            sourceId: 0x5075626c69635765623200000000000000000000000000000000000000000000,
-            votingRound: 1036988,
-            lowestUsedTimestamp: 0,
-            requestBody: requestBody,
-            responseBody: responseBody
-        });
-
-        // Define the complete Proof struct
-        IWeb2Json.Proof memory proof = IWeb2Json.Proof({
-            merkleProof: merkleProof,
-            data: response
-        });
-
-        // Submit the proof using the actual function call
-        paymentProcessor.submitProof(proof);
-
-        // If we reach here, the call was successful
-        console.log("Proof submitted successfully");
-    }
+    //     // xrpl to bytes: 724c487a507358366f586b7a5532714c31326b484348384738636e5a763172424a68
+    //     bytesToXrplAddress
+    // }
 }
