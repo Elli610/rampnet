@@ -101,12 +101,13 @@ function decodePackedBytes(packedData: Uint8Array): {
   const currencyTicker = new TextDecoder().decode(tickerBytes.slice(0, tickerLength));
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
-  let usdAmountCents = 0n;
+  let rawUsdAmountCents = 0n;
   for (let i = 0; i < 16; i++) {
-    usdAmountCents = (usdAmountCents << 8n) | BigInt(packedData[offset++]);
+    rawUsdAmountCents = (rawUsdAmountCents << 8n) | BigInt(packedData[offset++]);
   }
   
   // La valeur est déjà en cents depuis l'encodage, pas besoin de reconvertir
+  const usdAmountCents = rawUsdAmountCents;
   
   return {
     address,
