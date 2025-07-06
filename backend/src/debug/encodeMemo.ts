@@ -1,7 +1,7 @@
 /**
  * Encodes ethereum transaction data into packed bytes
  * 
- * @param address - Ethereum address without 0x prefix (40 hex chars)
+ * @param address - address (xrp or ethereum padded to 33 bytes) without 0x prefix (66 hex chars)
  * @param chainId - Chain ID (will be packed into 3 bytes)
  * @param currencyTicker - Currency ticker (max 6 chars, will be padded with nulls)
  * @param usdAmountCents - USD amount in cents (uint128)
@@ -13,9 +13,10 @@ function encodePackedBytes(
   currencyTicker: string,
   usdAmountCents: bigint
 ): Uint8Array {
+  console.log("address len: ", address.length);
   // Validate inputs
-  if (!/^[0-9a-fA-F]{40}$/.test(address)) {
-    throw new Error('Invalid Ethereum address format. Must be 40 hex characters without 0x prefix.');
+  if (!/^[0-9a-fA-F]{66}$/.test(address)) {
+    throw new Error('Invalid address format. Must be 66 hex characters without 0x prefix.');
   }
   
   if (chainId < 0 || chainId > 0xFFFFFF) {
@@ -30,7 +31,7 @@ function encodePackedBytes(
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
-  // Calculate total size: 33 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
+  // Calculate total size: 33 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 59 bytes
   const buffer = new Uint8Array(59);
   let offset = 0;
   
@@ -69,8 +70,8 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
-  if (packedData.length !== 45) {
-    throw new Error('Invalid packed data length. Expected 45 bytes.');
+  if (packedData.length !== 59) {
+    throw new Error('Invalid packed data length. Expected 59 bytes.');
   }
   
   let offset = 0;
@@ -115,7 +116,7 @@ function decodePackedBytes(packedData: Uint8Array): {
 function example() {
   try {
     const packedData = encodePackedBytes(
-      "0000000000000000742d35Cc6634C0532925a3b8D400aA888E86D14b", // Ethereum address
+      "00000000000000000000000000742d35Cc6634C0532925a3b8D400aA888E86D14b", // Ethereum address
       1,                                            // Mainnet chain ID
       "USDC",                                       // Currency ticker
       123456789n                                    // $1,234,567.89 in cents
