@@ -94,3 +94,7 @@ RampNet currently supports the following chains for token delivery and liquidity
 | Contract | Network | Address | Status |
 |------------------|---------|---------|--------|
 | [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Coston2 Testnet | [`0xB9C02e12eC682316484b458A053B38447774fAD5`](https://coston2-explorer.flare.network/address/0xB9C02e12eC682316484b458A053B38447774fAD5) | ✅ Verified |
+| [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Mainnet | [`0x8AF57d33f64d249D1D4522215B4c98E29bdB5178`](https://flarescan.com/address/0x8AF57d33f64d249D1D4522215B4c98E29bdB5178) | ✅ Verified |
+| [TokenSender](./contracts/contracts/TokenSender.sol) | Hedera mainnet | [0.0.9341088](https://hashscan.io/mainnet/contract/0.0.9341088?pr=1&pa=1&ps=1&pf=1) ([`0x8AF57d33f64d249D1D4522215B4c98E29bdB5178`](https://hashscan.io/mainnet/contract/0.0.9341088?pr=1&pa=1&ps=1&pf=1)) | ✅ Verified |
+
+> **Note:** The `PaymentProcessor` deployed on Flare mainnet skips the FDC attestation verification since it is not available yet.
