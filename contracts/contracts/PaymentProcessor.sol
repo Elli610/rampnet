@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
-import {Test, console2} from "forge-std/Test.sol";
 
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {IWeb2Json} from "@flarenetwork/flare-periphery-contracts/coston2/IWeb2Json.sol";
 import {TokenSender} from "./TokenSender.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockErc20} from "./MockErc20.sol";
+
 struct DTO {
     string paymentStatus;
     uint256 recipientId;
@@ -14,8 +14,8 @@ struct DTO {
     bytes paymentReference;
 }
 
-uint256 constant FLARE_LZ_CHAIN_ID = 30295;
-uint constant HEDERA_LZ_CHAIN_ID = 30316;
+uint256 constant FLARE_LZ_CHAIN_ID = 30316; // real: 30295
+uint constant HEDERA_LZ_CHAIN_ID = 30295; // real: 30316
 
 contract PaymentProcessor {
 
@@ -45,7 +45,6 @@ contract PaymentProcessor {
         tokenSender = tokenSender_;
         USDT0_FLARE = new MockErc20("USDT0", "USDT0");
 
-        console2.log("PaymentProcessor deployed with TokenSender =", address(tokenSender_));
         // Register tokens for Flare Mainnet and Hedera Mainnet
         currencies[FLARE_LZ_CHAIN_ID][bytes6("Fxrp")] = address(1); // todo: find real token address on flare coston2
         emit TokenRegistered(
@@ -87,19 +86,19 @@ contract PaymentProcessor {
         uint256 usdAmountCents
     ){
         if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
-        console2.log("Proof is valid");
+
         DTO memory aa = abi.decode(
             proof.data.responseBody.abiEncodedData,
             (DTO)
         );
-        console2.log("Decoded DTO");
+
         (
             receiverEthereumAddress,
             chainId,
             currencyTicker,
             usdAmountCents
         ) = decodePackedData(aa.paymentReference);
-        console2.log("Decoded packed data");
+
         emit DecodedReference(
             receiverEthereumAddress,
             chainId,
@@ -115,29 +114,16 @@ contract PaymentProcessor {
             chainId,
             currencyTicker
         );
-        console2.log("Currency address:", currency);
-        uint256 price = 0; // todo: get oracle price for the currency BE CAREFUL WITH DECIMALS
-        uint256 amount = price * usdAmountCents;
-/////
-        return (
-            recipientId,
-            recipientAccount,
-            paymentStatus,
-            receiverEthereumAddress,
-            chainId,
-            currencyTicker,
-            usdAmountCents
-        );
-        /////
 
+        uint256 price = 0; // todo: get oracle price for the currency BE CAREFUL WITH DECIMALS
+        uint256 amount = price * usdAmountCents + 1;
         // Send the payment
         if (chainId == FLARE_LZ_CHAIN_ID) {
-            amount = price * usdAmountCents;
 
             IERC20 token = IERC20(currency);
 
             require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
-
+            
             token.transfer(receiverEthereumAddress, amount);
         } else {
             tokenSender.sendDistribution(

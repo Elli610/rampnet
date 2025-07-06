@@ -8,7 +8,19 @@ import {TokenSender} from "../contracts/TokenSender.sol";
 
 /*
 forge script scripts/DeployPaymentProcessor.s.sol:DeployPaymentProcessor \
-                --rpc-url https://coston2-api.flare.network/ext/C/rpc --broadcast
+  --rpc-url https://coston2-api.flare.network/ext/C/rpc \
+  --broadcast \
+  --verify \
+  --verifier blockscout \
+  --verifier-url https://flare-explorer.flare.network/api
+*/
+/*
+verify:
+forge verify-contract 0xb70229cae82A5B0D68A9231E8c4d4478aD2395e9 \
+  contracts/PaymentProcessor.sol:PaymentProcessor \
+  --rpc-url https://coston2-api.flare.network/ext/C/rpc \
+  --verifier blockscout \
+  --verifier-url https://coston2-explorer.flare.network/api
 */
 contract DeployPaymentProcessor is Script {
     function run() external {

@@ -19,7 +19,7 @@ contract PaymentProcessorTest is Test {
         // Currency: "USDC"
         // Amount: 123456789 cents ($1,234,567.89)
         
-        bytes memory packedData = hex"742D35CC6634C0532925A3B8d400aA888E86D14b000001999999999999000000000000000000000000075BCD15";
+        bytes memory packedData = hex"742D35CC6634C0532925A3B8d400aA888E86D14b00000001999999999999000000000000000000000000075BCD15";
         
         // Call the internal function through a wrapper
         (
