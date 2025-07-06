@@ -16,7 +16,7 @@ forge script scripts/DeployPaymentProcessor.s.sol:DeployPaymentProcessor \
 */
 /*
 verify:
-forge verify-contract 0xb70229cae82A5B0D68A9231E8c4d4478aD2395e9 \
+forge verify-contract 0xa5d847DE1980B27b67Cb4800eEe9Fe4164819932 \
   contracts/PaymentProcessor.sol:PaymentProcessor \
   --rpc-url https://coston2-api.flare.network/ext/C/rpc \
   --verifier blockscout \
