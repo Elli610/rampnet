@@ -28,6 +28,7 @@ uint256 constant XRPL_TESTNET_CHAIN_ID = 100;
 uint256 constant FLARE_LZ_CHAIN_ID = 30295;
 uint256 constant HEDERA_LZ_CHAIN_ID = 30316;
 
+
 // Fxrp token address on Coston2 (token not available on flare mainnet)
 address constant FXRP_COSTON2_ADDRESS = address(0x8b4abA9C4BD7DD961659b02129beE20c6286e17F); 
 IAssetManager constant ASSET_MANAGER = IAssetManager(0xDeD50DA9C3492Bee44560a4B35cFe0e778F41eC5);
