@@ -41,10 +41,6 @@ const fdcRequestFeeConfigurations = new Contract("0x191a1282Ac700edE65c5B0AaF313
 const flareSystemsManager = new Contract("0xA90Db6D10F856799b10ef2A77EBCbF460aC71e52", FlareSystemsManagerAbi, wallet);
 const relay = new Contract("0x97702e350CaEda540935d92aAf213307e9069784", IRelayAbi, wallet);
 const fdcVerification = new Contract("0x906507E0B64bcD494Db73bd0459d1C667e14B933", IFdcVerificationAbi, wallet);
-// Non Flare chain
-const coston2Provider = new JsonRpcProvider("https://coston2-api.flare.network/ext/C/rpc");
-const coston2Wallet = new Wallet(process.env.PRIVATE_KEY || '', coston2Provider);
-export const masterIssuer = new Contract("0xB9C02e12eC682316484b458A053B38447774fAD5", MasterIssuerAbi, coston2Wallet); 
 
 async function prepareAttestationRequestBase(
   url: string,

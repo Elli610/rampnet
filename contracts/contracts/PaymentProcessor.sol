@@ -87,7 +87,7 @@ contract PaymentProcessor {
             bytes6("Fxrp"),
             address(1)
         );
-        currencies[HEDERA_LZ_CHAIN_ID][bytes6("USDT0")] = address(2); // todo: deploy mock token 
+        currencies[HEDERA_LZ_CHAIN_ID][bytes6("USDT0")] = address(0xDf162046C53e06b99670554F5458De4BaA36b6dB);
         emit TokenRegistered(
             HEDERA_LZ_CHAIN_ID,
             bytes6("USDT0"),
@@ -174,7 +174,7 @@ contract PaymentProcessor {
             // );
             revert("todo"); // todo: convert bytes to XRPL address and call redeem function (first get 33 bytes addresses)
 
-        } else{
+        } else {
             // Pass through Layer0
             if (chainId != FLARE_MAINNET_CHAIN_ID) {
                 revert("Cannot trigger Layer0 from Coston2 testnet");
@@ -210,7 +210,7 @@ contract PaymentProcessor {
     {
         if (data.length != 46) revert InvalidDataLength(data.length);
         
-        // Extract address (up to 33 bytes)
+        // Extract address (up to 20 bytes)
         bytes20 tempAddress;
         for (uint256 i = 0; i < 20; i++) {
             tempAddress |= bytes20(uint160(uint8(data[i]))) >> (i * 8);

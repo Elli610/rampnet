@@ -1,14 +1,14 @@
-import { AbiCoder } from "ethers";
+import { AbiCoder, Contract, JsonRpcProvider, Wallet } from "ethers";
 import { 
   prepareAttestationRequestBase, 
   submitAttestationRequest, 
   retrieveDataAndProofBaseWithRetry, 
-  masterIssuer, 
   toUtf8HexString,
   type PrepareAttestationResponse,
   type ProofResponse
 } from "./base";
 import "dotenv/config";
+import { MasterIssuerAbi } from "./abis/MasterIssuerAbi";
 
 const { WEB2JSON_VERIFIER_URL_TESTNET, VERIFIER_API_KEY_TESTNET, COSTON2_DA_LAYER_URL, WISE_API_KEY } = process.env;
 
@@ -37,7 +37,7 @@ interface WiseRequestBody {
   body: string;
   postProcessJq: string;
   abiSignature: string;
-  [key: string]: unknown; // Signature d'index pour compatibilité avec Record<string, unknown>
+  [key: string]: unknown;
 }
 
 interface EvmProofData {
@@ -196,6 +196,13 @@ async function broadcastProof(
   };
 
   console.log("Submitting proof to blockchain...");
+
+  const isFlareMainnet = BigInt("0x" + (flatData[-1] as string).slice(20, 24)) == BigInt(30295);
+  console.log("isFlareTestnet:", isFlareMainnet);
+  
+  const coston2Provider = new JsonRpcProvider(isFlareMainnet ? "https://rpc.ankr.com/flare":"https://coston2-api.flare.network/ext/C/rpc");
+  const coston2Wallet = new Wallet(process.env.PRIVATE_KEY || '', coston2Provider);
+  const masterIssuer = new Contract(isFlareMainnet ? "0x0a40C5c9f17Fc9fcc82C13f3cb0691F784156881" : "0xB9C02e12eC682316484b458A053B38447774fAD5", MasterIssuerAbi, coston2Wallet); 
 
   const tx = await masterIssuer.submitProof(evmProof);
   const result = await tx.wait();
