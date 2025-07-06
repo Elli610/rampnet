@@ -18,6 +18,7 @@ uint256 constant FLARE_MAINNET_CHAIN_ID = 14;
 uint256 constant FLARE_LZ_CHAIN_ID = 30295;
 uint constant HEDERA_LZ_CHAIN_ID = 30316;
 
+// Contract supposed to be deployed on Flare Coston2 testnet or Flare Mainnet (with proof verification disabled)
 contract PaymentProcessor {
 
     TokenSender public immutable tokenSender;
@@ -81,12 +82,16 @@ contract PaymentProcessor {
         uint256 recipientId,
         uint256 recipientAccount,
         string memory paymentStatus,
-        address  receiverEthereumAddress,
+        address receiverEthereumAddress,
         uint256 chainId,
         bytes6 currencyTicker,
         uint256 usdAmountCents
     ){
-        if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
+        // Since Web2Json proof verification is not available on Flare Mainnet,
+        // we skip the verification step here.
+        if (block.chainid != FLARE_MAINNET_CHAIN_ID) {
+            if(!isWeb2JsonProofValid(proof)) revert InvalidProof();
+        }
 
         DTO memory aa = abi.decode(
             proof.data.responseBody.abiEncodedData,
@@ -126,7 +131,12 @@ contract PaymentProcessor {
             require(token.balanceOf(address(this)) >= amount, "Insufficient balance in contract");
             
             token.transfer(receiverEthereumAddress, amount);
-        } else {
+        } else{
+            
+            if (chainId != FLARE_MAINNET_CHAIN_ID) {
+                revert("Cannot trigger Layer0 from Coston2 testnet");
+            }
+
             tokenSender.sendDistribution(
             uint32(chainId),
             currency,
