@@ -6,10 +6,7 @@ export interface WisePaymentMemo {
   ts: number;
 }
 export enum SupportedNetwork {
-  MANTLE = 'mantle',
-  FLOW = 'flow',
   HEDERA = 'hedera',
-  ZIRCUT = 'zircuit',
   XRPL = 'xrpl',
-  KATANA = 'katana'
+  FLARE = 'flare',
 }

@@ -4,14 +4,14 @@
  * @param address - Ethereum address without 0x prefix (40 hex chars)
  * @param chainId - Chain ID (will be packed into 3 bytes)
  * @param currencyTicker - Currency ticker (max 6 chars, will be padded with nulls)
- * @param usdAmountCents - USD amount in cents (uint128)
+ * @param usdAmount - USD amount (will be converted to cents by multiplying by 100)
  * @returns Uint8Array containing the packed data
  */
 function encodePackedBytes(
   address: string,
   chainId: number,
   currencyTicker: string,
-  usdAmountCents: bigint
+  usdAmount: bigint
 ): Uint8Array {
   // Validate inputs
   if (!/^[0-9a-fA-F]{40}$/.test(address)) {
@@ -26,11 +26,15 @@ function encodePackedBytes(
     throw new Error('Currency ticker must be 6 hex characters or less.');
   }
   
+  // Convert USD amount to cents: multiply by 100 and remove decimals
+  const usdAmountCents = BigInt(Math.floor(Number(usdAmount) * 100));
+  console.log('USD Amount in cents:', usdAmountCents);
+  
   if (usdAmountCents < 0n || usdAmountCents > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
-  // Calculate total size: 20 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 45 bytes
+  // Calculate total size: 20 (address) + 4 (chainId) + 6 (ticker) + 16 (uint128) = 46 bytes
   const buffer = new Uint8Array(46);
   let offset = 0;
   
@@ -62,6 +66,8 @@ function encodePackedBytes(
 /**
  * Utility function to decode packed bytes back to original values
  * Useful for testing and verification
+ * 
+ * Note: The usdAmountCents is converted from cents to dollars and multiplied by 100
  */
 function decodePackedBytes(packedData: Uint8Array): {
   address: string;
@@ -69,8 +75,8 @@ function decodePackedBytes(packedData: Uint8Array): {
   currencyTicker: string;
   usdAmountCents: bigint;
 } {
-  if (packedData.length !== 45) {
-    throw new Error('Invalid packed data length. Expected 45 bytes.');
+  if (packedData.length !== 46) {
+    throw new Error('Invalid packed data length. Expected 46 bytes.');
   }
   
   let offset = 0;
@@ -81,8 +87,9 @@ function decodePackedBytes(packedData: Uint8Array): {
     address += packedData[offset++].toString(16).padStart(2, '0');
   }
   
-  // 2. Chain ID (3 bytes, big-endian)
-  const chainId = (packedData[offset++] << 16) | 
+  // 2. Chain ID (4 bytes, big-endian)
+  const chainId = (packedData[offset++] << 24) | 
+                  (packedData[offset++] << 16) | 
                   (packedData[offset++] << 8) | 
                   packedData[offset++];
   
@@ -97,10 +104,14 @@ function decodePackedBytes(packedData: Uint8Array): {
   const currencyTicker = new TextDecoder().decode(tickerBytes.slice(0, tickerLength));
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
-  let usdAmountCents = 0n;
+  let rawUsdAmountCents = 0n;
   for (let i = 0; i < 16; i++) {
-    usdAmountCents = (usdAmountCents << 8n) | BigInt(packedData[offset++]);
+    rawUsdAmountCents = (rawUsdAmountCents << 8n) | BigInt(packedData[offset++]);
   }
+  
+  // Convert to cents: multiply by 100 and remove decimals
+  const usdAmountCents = BigInt(Math.floor(Number(rawUsdAmountCents) * 100));
+  
   
   return {
     address,

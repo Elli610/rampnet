@@ -54,6 +54,30 @@ export const SUPPORTED_CHAINS: Chain[] = [
       },
     ],
   },
+  {
+    id: 'flare',
+    name: 'Flare',
+    symbol: 'FLR',
+    icon: '/flare_logo.png',
+    rpcUrl: 'https://coston2-api.flare.network/ext/C/rpc',
+    blockExplorer: 'https://coston2-explorer.flare.network',
+    addressType: 'evm',
+    chainId: 30295,
+    supportedTokens: [
+      {
+        symbol: 'USDT0',
+        name: 'USDT0 by LayerZero',
+        decimals: 6,
+        icon: '/usdt0_logo.png',
+      },
+      {
+        symbol: 'XRP',
+        name: 'XRP on Flare',
+        decimals: 6,
+        icon: '/xrp_logo.png',
+      },
+    ],
+  },
 ];
 
 export const getChainById = (chainId: string): Chain | undefined => {
