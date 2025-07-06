@@ -115,7 +115,3 @@ async function main() {
 void main().then(() => {
     process.exit(0);
 });
-
-// broadcastProof({}, 0).then(() => {
-//     process.exit(0);
-// });

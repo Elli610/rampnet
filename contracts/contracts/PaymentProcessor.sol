@@ -14,8 +14,9 @@ struct DTO {
     bytes paymentReference;
 }
 
-uint256 constant FLARE_LZ_CHAIN_ID = 30316; // real: 30295
-uint constant HEDERA_LZ_CHAIN_ID = 30295; // real: 30316
+uint256 constant FLARE_MAINNET_CHAIN_ID = 14;
+uint256 constant FLARE_LZ_CHAIN_ID = 30295;
+uint constant HEDERA_LZ_CHAIN_ID = 30316;
 
 contract PaymentProcessor {
 
