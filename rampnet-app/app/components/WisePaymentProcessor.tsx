@@ -68,7 +68,7 @@ export default function WisePaymentProcessor({
           currency: transferData.selectedToken.symbol,
           network: transferData.selectedChain.chainId,
         };
-
+        console.log('Transfer data:', transferData);
         console.log('Calling /api/memo with:', apiPayload);
 
         const response = await fetch('/api/memo', {
@@ -109,22 +109,11 @@ export default function WisePaymentProcessor({
     setHasApiError(false);
 
     try {
-      const networkMapping: { [key: string]: string } = {
-        mantle: 'MANTLE',
-        flow: 'FLOW',
-        hedera: 'HEDERA',
-        zircuit: 'ZIRCUIT',
-        xrpl: 'XRPL',
-        katana: 'KATANA',
-      };
-
       const apiPayload = {
         usdAmount: transferData.usdAmount,
         address: transferData.recipientAddress,
         currency: transferData.selectedToken.symbol,
-        network:
-          networkMapping[transferData.selectedChain.id] ||
-          transferData.selectedChain.id.toUpperCase(),
+        network: transferData.selectedChain.chainId,
       };
 
       console.log('Retrying /api/memo with:', apiPayload);

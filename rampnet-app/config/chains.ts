@@ -70,12 +70,6 @@ export const SUPPORTED_CHAINS: Chain[] = [
         decimals: 6,
         icon: '/usdt0_logo.png',
       },
-      {
-        symbol: 'XRP',
-        name: 'XRP on Flare',
-        decimals: 6,
-        icon: '/xrp_logo.png',
-      },
     ],
   },
 ];
