@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     console.log({ usdAmount, address, currency, network });
 
     const fullMemo = Uint8ArrayToHex(
-      encodePackedBytes(address.slice(2), network, currency, BigInt(usdAmount))
+      encodePackedBytes(address.slice(2), network, currency, BigInt(usdAmount)* 100n)
     );
     await connectDB();
 
