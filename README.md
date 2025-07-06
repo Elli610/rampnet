@@ -94,8 +94,8 @@ RampNet currently supports the following chains for token delivery and liquidity
 | Contract | Network | Address | Status |
 |------------------|---------|---------|--------|
 | [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Coston2 Testnet | [`0xB9C02e12eC682316484b458A053B38447774fAD5`](https://coston2-explorer.flare.network/address/0xB9C02e12eC682316484b458A053B38447774fAD5) | ✅ Verified |
-| [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Mainnet | [`0x0a40C5c9f17Fc9fcc82C13f3cb0691F784156881`](https://flarescan.com/address/0x0a40C5c9f17Fc9fcc82C13f3cb0691F784156881) | ❌ Not verified |
-| [TokenSender](./contracts/contracts/TokenSender.sol) | Flare Mainnet | [`0xf0E82276aDbbf130F43992A728B5268CFfa3231b`](https://flarescan.com/address/0xf0E82276aDbbf130F43992A728B5268CFfa3231b) | ❌ Not verified |
+| [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Mainnet | [`0xd8E10345E267Be6ea14BC244e68Ea4E24f574063`](https://flarescan.com/address/0x0a40C5c9f17Fc9fcc82C13f3cb0691F784156881) | ✅ Verified |
+| [TokenSender](./contracts/contracts/TokenSender.sol) | Flare Mainnet | [`0xf0E82276aDbbf130F43992A728B5268CFfa3231b`](https://flarescan.com/address/0xf0E82276aDbbf130F43992A728B5268CFfa3231b) | ✅ Verified |
 | [TokenSender](./contracts/contracts/TokenSender.sol) | Hedera mainnet | [0.0.9341088](https://hashscan.io/mainnet/contract/0.0.9341088?pr=1&pa=1&ps=1&pf=1) ([`0x8AF57d33f64d249D1D4522215B4c98E29bdB5178`](https://hashscan.io/mainnet/contract/0.0.9341088?pr=1&pa=1&ps=1&pf=1)) | ❌ Not verified |
 
 > **Note:** The `PaymentProcessor` deployed on Flare mainnet skips the FDC attestation verification since it is not available yet.
