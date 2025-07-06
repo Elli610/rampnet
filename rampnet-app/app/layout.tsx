@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     title: 'RampNet - Omnichain On-Ramping Infrastructure',
     description:
       'Seamless, programmable on/off-ramping protocol for the omnichain era',
-    url: 'https://rampnet.vercel.app/',
+    url: 'https://rampnet.cypherlab.org/',
     siteName: 'RampNet',
     images: [
       {

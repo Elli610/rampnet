@@ -118,7 +118,7 @@ function HomeContent() {
               <span className="font-semibold text-primary-600"> minimal friction</span>.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-24">
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-20">
               <button
                 onClick={login}
                 className="group btn-primary flex items-center justify-center gap-3 text-xl px-10 py-5 bg-gradient-to-r from-primary-600 via-purple-600 to-pink-500 hover:from-purple-600 hover:via-pink-500 hover:to-red-500 shadow-2xl hover:shadow-3xl transform hover:scale-110 transition-all duration-300 rounded-2xl"
@@ -135,12 +135,50 @@ function HomeContent() {
               </button>
             </div>
 
+            {/* Supported Networks - Moved here */}
+            <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-4xl p-12 text-white shadow-2xl mb-20">
+              <h2 className="text-3xl font-black text-center mb-3">
+                <span className="text-white">Supported </span>
+                <span className="text-primary-400">Networks</span>
+              </h2>
+              <p className="text-center text-gray-400 text-lg mb-12">
+                Connect to the blockchain ecosystem of your choice
+              </p>
+              <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-8">
+                {[
+                  { name: 'Flare', color: 'from-red-400 to-red-600', logo: 'flare_logo.png' },
+                  { name: 'Hedera', color: 'from-purple-400 to-purple-600', logo: 'hedera_logo.png' },
+                  { name: 'XRPL', color: 'from-indigo-400 to-indigo-600', logo: 'xrpl_logo.png' }
+                ].map((chain) => (
+                  <div key={chain.name} className="text-center group">
+                    <div className="w-16 h-16 bg-gradient-to-r from-white to-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 p-3 shadow-2xl">
+                      <Image 
+                        src={`/${chain.logo}`}
+                        alt={`${chain.name} Logo`}
+                        width={64}
+                        height={64}
+                        className="w-full h-full object-contain rounded-full"
+                        onError={(e) => {
+                          const fallbackDiv = document.createElement('div');
+                          fallbackDiv.className = `w-full h-full bg-gradient-to-r ${chain.color} rounded-full flex items-center justify-center`;
+                          fallbackDiv.innerHTML = `<span class="text-white font-bold text-lg">${chain.name[0]}</span>`;
+                          e.currentTarget.parentElement!.replaceChild(fallbackDiv, e.currentTarget);
+                        }}
+                      />
+                    </div>
+                    <div className="text-base font-bold text-gray-300 group-hover:text-white transition-colors duration-300">{chain.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Scroll indicator */}
             <div className="animate-bounce mb-20">
               <ChevronDown className="w-8 h-8 text-gray-400 mx-auto" />
             </div>
           </div>
         </div>        
+        
         {/* Features Grid with enhanced animations */}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
           <div className="grid md:grid-cols-3 gap-10 mb-32">
@@ -217,43 +255,6 @@ function HomeContent() {
                   </div>
                   <h3 className="font-bold text-gray-900 mb-4 text-xl">{step.title}</h3>
                   <p className="text-gray-600 leading-relaxed text-lg">{step.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Supported Chains */}
-          <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-4xl p-16 text-white shadow-2xl">
-            <h2 className="text-5xl font-black text-center mb-4">
-              <span className="text-white">Supported </span>
-              <span className="text-primary-400">Networks</span>
-            </h2>
-            <p className="text-center text-gray-400 text-xl mb-16">
-              Connect to the blockchain ecosystem of your choice
-            </p>
-            <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-10">
-              {[
-                { name: 'Flare', color: 'from-red-400 to-red-600', logo: 'flare_logo.png' },
-                { name: 'Hedera', color: 'from-purple-400 to-purple-600', logo: 'hedera_logo.png' },
-                { name: 'XRPL', color: 'from-indigo-400 to-indigo-600', logo: 'xrpl_logo.png' }
-              ].map((chain) => (
-                <div key={chain.name} className="text-center group">
-                  <div className="w-20 h-20 bg-gradient-to-r from-white to-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-125 group-hover:rotate-12 transition-all duration-500 p-3 shadow-2xl">
-                    <Image 
-                      src={`/${chain.logo}`}
-                      alt={`${chain.name} Logo`}
-                      width={64}
-                      height={64}
-                      className="w-full h-full object-contain rounded-full"
-                      onError={(e) => {
-                        const fallbackDiv = document.createElement('div');
-                        fallbackDiv.className = `w-full h-full bg-gradient-to-r ${chain.color} rounded-full flex items-center justify-center`;
-                        fallbackDiv.innerHTML = `<span class="text-white font-bold text-xl">${chain.name[0]}</span>`;
-                        e.currentTarget.parentElement!.replaceChild(fallbackDiv, e.currentTarget);
-                      }}
-                    />
-                  </div>
-                  <div className="text-lg font-bold text-gray-300 group-hover:text-white transition-colors duration-300">{chain.name}</div>
                 </div>
               ))}
             </div>
