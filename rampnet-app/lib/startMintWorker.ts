@@ -36,7 +36,7 @@ async function processJob(job: { transferId: string }) {
   }
 
   const decoded = decodePackedBytes(hexToUint8Array(memo));
-  
+  console.log('Decoded memo:', decoded);
   // Vérifier si le payment existe avant de le mettre à jour
   const payment = await Payment.findOne({ memo });
   if (!payment) {

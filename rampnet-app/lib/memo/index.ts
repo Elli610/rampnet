@@ -2,24 +2,24 @@
  * Encodes ethereum transaction data into packed bytes
  * 
  * @param address - Ethereum address without 0x prefix (40 hex chars)
- * @param chainId - Chain ID (will be packed into 3 bytes)
+ * @param chainId - Chain ID (will be packed into 4 bytes)
  * @param currencyTicker - Currency ticker (max 6 chars, will be padded with nulls)
- * @param usdAmount - USD amount (will be converted to cents by multiplying by 100)
+ * @param usdAmountCents - USD amount (will be converted to cents by multiplying by 100)
  * @returns Uint8Array containing the packed data
  */
 function encodePackedBytes(
   address: string,
   chainId: number,
   currencyTicker: string,
-  usdAmount: bigint
+  usdAmountCents: bigint
 ): Uint8Array {
   // Validate inputs
   if (!/^[0-9a-fA-F]{40}$/.test(address)) {
     throw new Error('Invalid Ethereum address format. Must be 40 hex characters without 0x prefix.');
   }
   
-  if (chainId < 0 || chainId > 0xFFFFFF) {
-    throw new Error('Chain ID must be between 0 and 16777215 (3 bytes max).');
+  if (chainId < 0 || chainId > 0xFFFFFFFF) {
+    throw new Error('Chain ID must be between 0 and 4294967295 (4 bytes max).');
   }
   
   if (currencyTicker.length > 6) {
@@ -27,10 +27,9 @@ function encodePackedBytes(
   }
   
   // Convert USD amount to cents: multiply by 100 and remove decimals
-  const usdAmountCents = BigInt(Math.floor(Number(usdAmount) * 100));
-  console.log('USD Amount in cents:', usdAmountCents);
+  const convertedAmount = BigInt(Math.floor(Number(usdAmountCents) * 100));
   
-  if (usdAmountCents < 0n || usdAmountCents > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
+  if (convertedAmount < 0n || convertedAmount > 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFn) {
     throw new Error('USD amount must be between 0 and 2^128-1.');
   }
   
@@ -57,7 +56,7 @@ function encodePackedBytes(
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
   for (let i = 15; i >= 0; i--) {
-    buffer[offset++] = Number((usdAmountCents >> BigInt(i * 8)) & 0xFFn);
+    buffer[offset++] = Number((convertedAmount >> BigInt(i * 8)) & 0xFFn);
   }
   
   return buffer;
@@ -66,8 +65,6 @@ function encodePackedBytes(
 /**
  * Utility function to decode packed bytes back to original values
  * Useful for testing and verification
- * 
- * Note: The usdAmountCents is converted from cents to dollars and multiplied by 100
  */
 function decodePackedBytes(packedData: Uint8Array): {
   address: string;
@@ -104,14 +101,12 @@ function decodePackedBytes(packedData: Uint8Array): {
   const currencyTicker = new TextDecoder().decode(tickerBytes.slice(0, tickerLength));
   
   // 4. USD amount in cents (16 bytes, uint128, big-endian)
-  let rawUsdAmountCents = 0n;
+  let usdAmountCents = 0n;
   for (let i = 0; i < 16; i++) {
-    rawUsdAmountCents = (rawUsdAmountCents << 8n) | BigInt(packedData[offset++]);
+    usdAmountCents = (usdAmountCents << 8n) | BigInt(packedData[offset++]);
   }
   
-  // Convert to cents: multiply by 100 and remove decimals
-  const usdAmountCents = BigInt(Math.floor(Number(rawUsdAmountCents) * 100));
-  
+  // La valeur est déjà en cents depuis l'encodage, pas besoin de reconvertir
   
   return {
     address,
