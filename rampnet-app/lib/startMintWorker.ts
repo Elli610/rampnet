@@ -1,5 +1,6 @@
 import { mintQueue } from '@/lib/mintQueue';
 import { decodePackedBytes, hexToUint8Array } from './memo';
+import { processWisePaymentAttestation } from './attestation/index';
 import Payment from '@/_models/Payment';
 
 const WISE_API_TOKEN = process.env.WISE_API_KEY!;
@@ -43,8 +44,20 @@ async function processJob(job: { transferId: string }) {
   console.log('Currency:', currency);
   console.log('Decoded Memo:', decoded);
 
-  // TODO: Smart contract call to mint
-  // await mintTo(decoded.address, amount, decoded.currency, decoded.network);
+  // Process Wise payment attestation
+  console.log('🔐 Starting Wise payment attestation...');
+  try {
+    await processWisePaymentAttestation(parseInt(job.transferId));
+    console.log('✅ Wise payment attestation completed successfully');
+    
+    // Update payment status to completed after successful attestation
+    await payment.update({ paymentStatus: 'completed' });
+    
+  } catch (error) {
+    console.error('❌ Wise payment attestation failed:', error);
+    await payment.update({ paymentStatus: 'failed' });
+    throw error; // Re-throw to trigger job failure handling
+  }
 
   // Only remove if succeeded
   mintQueue.remove();
