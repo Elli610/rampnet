@@ -6,11 +6,11 @@ import {TokenSender} from "../contracts/TokenSender.sol";
 contract DeployOApp is Script {
     function run() external {
         // Replace these env vars with your own values
-        address endpoint = vm.envAddress("FLARE_ENDPOINT_V2");
+        address endpoint = vm.envAddress("ARBITRUM_SEPOLIA_ENDPOINT_V2");
         address owner = vm.envAddress("OWNER_ADDRESS");
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-        MyOApp oapp = new MyOApp(endpoint, owner);
+        TokenSender oapp = new TokenSender(endpoint, owner);
         vm.stopBroadcast();
 
         console.log("MyOApp deployed to:", address(oapp));

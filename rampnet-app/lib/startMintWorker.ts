@@ -36,7 +36,7 @@ async function processJob(job: { transferId: string }) {
 
   const decoded = decodePackedBytes(hexToUint8Array(memo));
   const payment = await Payment.findOne({ memo });
-  await payment.update({ paymentStatus: 'processing' });
+  // await payment.update({ paymentStatus: 'processing' });
 
   console.log('✅ Transfer Info:');
   console.log('Amount:', amount);
