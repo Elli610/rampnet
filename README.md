@@ -88,3 +88,9 @@ RampNet currently supports the following chains for token delivery and liquidity
                            +----------------------------+
 
 ```
+
+## 📋 Deployed Contracts
+
+| Contract | Network | Address | Status |
+|------------------|---------|---------|--------|
+| [PaymentProcessor](./contracts/contracts/PaymentProcessor.sol) | Flare Coston2 Testnet | [`0xB9C02e12eC682316484b458A053B38447774fAD5`](https://coston2-explorer.flare.network/address/0xB9C02e12eC682316484b458A053B38447774fAD5) | ✅ Verified |
