@@ -37,14 +37,16 @@ async function processJob(job: { transferId: string }) {
 
   const decoded = decodePackedBytes(hexToUint8Array(memo));
   console.log('Decoded memo:', decoded);
-  
+
   // Vérifier si le payment existe avant de le mettre à jour
   const payment = await Payment.findOne({ memo });
   if (!payment) {
     throw new Error(`Payment not found for memo: ${memo}`);
   }
 
-  console.log(`📄 Found payment: ${payment._id}, current status: ${payment.paymentStatus}`);
+  console.log(
+    `📄 Found payment: ${payment._id}, current status: ${payment.paymentStatus}`
+  );
 
   console.log('✅ Transfer Info:');
   console.log('Amount:', amount);
@@ -56,24 +58,23 @@ async function processJob(job: { transferId: string }) {
   try {
     await processWisePaymentAttestation(parseInt(job.transferId));
     console.log('✅ Wise payment attestation completed successfully');
-    
+
     // Update payment status to confirmed ONLY after successful attestation
     const updateResult = await Payment.updateOne(
-      { memo }, 
+      { memo },
       { paymentStatus: 'confirmed' }
     );
     console.log('📄 Update result:', updateResult);
     console.log('📄 Payment status updated to: confirmed');
-    
   } catch (error) {
     console.error('❌ Wise payment attestation failed:', error);
     const updateResult = await Payment.updateOne(
-      { memo }, 
+      { memo },
       { paymentStatus: 'failed' }
     );
     console.log('📄 Update result:', updateResult);
     console.log('📄 Payment status updated to: failed');
-    throw error; // Re-throw to trigger job failure handling
+    mintQueue.remove();
   }
 
   // Only remove if succeeded
@@ -120,3 +121,4 @@ export function startMintWorker() {
 
   loop();
 }
+
